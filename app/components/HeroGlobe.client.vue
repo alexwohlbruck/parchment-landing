@@ -239,27 +239,7 @@ function init() {
     albedoLoaded = true;
     maybeEmitReady();
   };
-  loader.load(
-    "/textures/globe/earth_albedo.png",
-    (tex) => setAlbedo(tex),
-    undefined,
-    () => {
-      // fallback to bundled texture
-      loader.load(
-        "/textures/earth-blue-marble.jpg",
-        (tex) => setAlbedo(tex),
-        undefined,
-        () =>
-          console.warn(
-            "[HeroGlobe] Missing albedo in /textures/globe and bundled"
-          )
-      );
-    }
-  );
-  // Prefer generated bump + roughness (WebP/PNG)
-  const setBump = (tex: THREE.Texture) => {
-    // No bump or PBR in flat mode
-  };
+  loader.load("/textures/earth_albedo.png", (tex) => setAlbedo(tex));
 
   // Clouds layer (optional; prefer WebP)
   const setupClouds = (tex: THREE.Texture) => {
@@ -282,26 +262,7 @@ function init() {
     clouds.position.copy(sphere.position);
     scene.add(clouds);
   };
-  // loader.load(
-  //   "/textures/globe/clouds.webp",
-  //   (tex) => setupClouds(tex),
-  //   undefined,
-  //   () => {
-  //     loader.load(
-  //       "/textures/clouds.png",
-  //       (tex) => setupClouds(tex),
-  //       undefined,
-  //       () => {
-  //         // Fallback: generate procedural clouds
-  //         console.warn(
-  //           "[HeroGlobe] Missing clouds textures, generating procedural clouds"
-  //         );
-  //         const tex = generateCloudsTexture(1024, 512);
-  //         setupClouds(tex);
-  //       }
-  //     );
-  //   }
-  // );
+  loader.load("/textures/clouds.jpg", (tex) => setupClouds(tex));
 
   state.startedAt = performance.now();
   onResize();
