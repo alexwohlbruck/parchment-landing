@@ -148,23 +148,19 @@ function patchStyleForRenderer(style) {
     }
   }
 
-  // Hide place labels: symbol layers with typical place label ids or source-layers
+  // Hide ALL symbol layers (remove any labels, POIs, water labels, etc.)
   for (const layer of cloned.layers) {
-    if (layer.type !== 'symbol') continue;
-    const id = (layer.id || '').toLowerCase();
-    const srcLayer = (layer['source-layer'] || '').toLowerCase();
-    const looksPlace = /place|settlement|city|town|village|locality/.test(id) || /place|settlement|city|town|village|locality/.test(srcLayer);
-    if (looksPlace) {
+    if (layer.type === 'symbol') {
       layer.layout = layer.layout || {};
       layer.layout.visibility = 'none';
     }
   }
 
-  // Hide road layers (lines and symbols) in classic styles
+  // Hide road layers (lines and fill layers)
   for (const layer of cloned.layers) {
     const id = (layer.id || '').toLowerCase();
     const srcLayer = (layer['source-layer'] || '').toLowerCase();
-    const roadRegex = /(\broad\b|motorway|trunk|primary|secondary|tertiary|street|highway|path|pedestrian|bridge|tunnel|roundabout|service)/;
+    const roadRegex = /(\broad\b|motorway|trunk|primary|secondary|tertiary|street|highway|path|pedestrian|bridge|tunnel|roundabout|service|ferry|railway|rail|runway|aeroway)/;
     const looksRoad = roadRegex.test(id) || roadRegex.test(srcLayer);
     if (looksRoad) {
       layer.layout = layer.layout || {};
@@ -172,10 +168,8 @@ function patchStyleForRenderer(style) {
     }
   }
 
-  // Ensure glyphs are present for labels; Mapbox hosted glyphs are fine with token
-  if (!cloned.glyphs) {
-    cloned.glyphs = 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf';
-  }
+  // Remove glyphs definition to prevent any label rendering fallback
+  delete cloned.glyphs;
 
   injectBackgroundIfMissing(cloned);
 
