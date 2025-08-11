@@ -280,7 +280,7 @@ onBeforeUnmount(() => {
       </UiNavbar>
 
       <div
-        class="relative z-10 mx-auto flex w-[min(1100px,92%)] max-w-5xl flex-col items-center pt-20 md:pt-24 lg:pt-28 will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
+        class="relative z-10 mx-auto flex w-[min(1100px,92%)] max-w-5xl flex-col items-center pt-48 will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
       >
         <h1
           class="hero-tilt text-center font-serif text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
@@ -311,21 +311,16 @@ onBeforeUnmount(() => {
       <!-- Globe render target for hero placement (invisible) -->
       <div
         ref="heroTargetRef"
-        class="absolute left-1/2 bottom-[-28%] md:bottom-[-30%] lg:bottom-[-60%] -translate-x-1/2 w-[130vw]"
-        style="aspect-ratio: 1/1; pointer-events: none"
+        class="absolute left-1/2 top-[50%] -translate-x-1/2 w-[200vw] md:w-[150vw] lg:w-[100vw]"
+        style="aspect-ratio: 1/1"
       ></div>
     </section>
 
     <section
       id="try"
-      class="relative snap-start bg-space text-parchment min-h-[100dvh]"
+      class="relative snap-start bg-space text-parchment min-h-[100dvh] flex items-center"
     >
-      <div
-        class="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_bottom,rgba(255,255,255,0.08)_0%,transparent_60%)]"
-      ></div>
-      <div
-        class="relative z-10 mx-auto w-[min(1100px,95%)] min-h-full py-20 md:py-28 grid gap-6 md:grid-cols-2 md:items-center"
-      >
+      <div class="flex flex-col items-left justify-left">
         <h2
           class="font-serif text-[clamp(2rem,6vw,4rem)] leading-tight md:col-span-1"
         >
@@ -361,9 +356,7 @@ onBeforeUnmount(() => {
         transform: translate3d(0, 0, 0) scale(1, 1);
       "
     >
-      <div
-        class="absolute inset-0 overflow-hidden translate-y-[26%] md:translate-y-[30%] lg:translate-y-[34%]"
-      >
+      <div class="absolute inset-0 overflow-hidden">
         <HeroGlobe />
       </div>
     </div>

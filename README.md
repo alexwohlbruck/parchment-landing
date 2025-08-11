@@ -96,3 +96,20 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Globe textures (offline build)
+
+Generate high‑quality equirectangular textures (albedo, roughness, bump) from open datasets:
+
+```bash
+brew install gdal imagemagick   # prerequisites (macOS)
+chmod +x scripts/build-globe-textures.sh
+SIZE_W=16384 SIZE_H=8192 ./scripts/build-globe-textures.sh
+```
+
+Outputs are written to `public/textures/globe/`:
+- `earth_albedo.png`
+- `earth_roughness.png`
+- `earth_bump.png`
+
+Adjust the color ramp at `scripts/colors-standard.txt` to tune the palette.

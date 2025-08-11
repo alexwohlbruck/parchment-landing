@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import * as THREE from "three";
 
+const emit = defineEmits<{ (e: "ready"): void }>();
+
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 let renderer: THREE.WebGLRenderer | null = null;
 let scene: THREE.Scene;
@@ -15,6 +17,15 @@ let atmosphere: THREE.Mesh | null = null;
 let frameId: number | null = null;
 let sizeObserver: ResizeObserver | null = null;
 let resizeScheduled = false;
+let albedoLoaded = false;
+let firstFrameRendered = false;
+let readyEmitted = false;
+function maybeEmitReady() {
+  if (!readyEmitted && albedoLoaded && firstFrameRendered) {
+    readyEmitted = true;
+    emit("ready");
+  }
+}
 
 function generateCloudsTexture(
   width = 1024,
@@ -88,8 +99,10 @@ function init() {
     canvas.clientHeight ||
     Math.round(window.innerHeight * 0.6);
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  // Ensure sRGB output
+  // Ensure sRGB output and slightly brighter tone-mapping
   (renderer as any).outputColorSpace = THREE.SRGBColorSpace as any;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(width, height, false);
 
@@ -97,17 +110,18 @@ function init() {
   camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
   camera.position.set(0, 0, 3.1);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.03));
-  const sunLight = new THREE.DirectionalLight(0xffffff, 1.05);
+  // Brighter, more stylized lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+  const sunLight = new THREE.DirectionalLight(0xffffff, 0.9);
   // Angle the sun for a clear day/night terminator
   sunLight.position.set(-2.0, 0.6, 1.5);
   scene.add(sunLight);
 
-  const geometry = new THREE.SphereGeometry(1.06, 160, 160);
+  const geometry = new THREE.SphereGeometry(1.06, 192, 192);
   earthMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(0xffffff),
-    roughness: 1.0,
-    metalness: 0.1,
+    roughness: 0.95,
+    metalness: 0.0,
   });
   // Hook into shader to add cloud shadows, night-only emissive, fresnel, and roughness inversion when maps exist
   earthMat.onBeforeCompile = (shader) => {
@@ -127,7 +141,7 @@ function init() {
     // Emissive map tweak to show only on night side + cloud shadows + atmospheric fresnel
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <emissivemap_fragment>",
-      `#ifdef USE_EMISSIVEMAP\n  vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );\n#else\n  vec4 emissiveColor = vec4(1.0);\n#endif\n  // Soften the day-night transition for emissive lights\n  float ndotl_em = dot(normal, directionalLights[0].direction);\n  emissiveColor *= 1.0 - smoothstep(-0.12, 0.04, ndotl_em);\n  totalEmissiveRadiance *= emissiveColor.rgb;\n\n  // Cloud negative light map (if clouds texture is bound)\n  #ifdef USE_MAP\n    vec2 uvCloud = vec2(vMapUv.x - uv_xOffset, vMapUv.y);\n    float cloudsMapValue = texture2D(tClouds, uvCloud).r;\n    diffuseColor.rgb *= mix(1.0, max(1.0 - cloudsMapValue, 0.2), hasClouds);\n  #endif\n\n  // Additional night shading to increase contrast with a soft terminator\n  float ndotl = dot(normal, directionalLights[0].direction);\n  float shade = smoothstep(-0.12, 0.02, ndotl);\n  diffuseColor.rgb *= mix(0.18, 1.0, shade);\n\n  // Subtle atmospheric fresnel on surface\n  float intensity = 1.4 - dot( normal, vec3( 0.0, 0.0, 1.0 ) );\n  vec3 atmosphere = vec3(0.30, 0.60, 1.0) * pow(intensity, 5.0);\n  diffuseColor.rgb += atmosphere;`
+      `#ifdef USE_EMISSIVEMAP\n  vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );\n#else\n  vec4 emissiveColor = vec4(1.0);\n#endif\n  // Soften the day-night transition for emissive lights\n  float ndotl_em = dot(normal, directionalLights[0].direction);\n  emissiveColor *= 1.0 - smoothstep(-0.20, 0.08, ndotl_em);\n  totalEmissiveRadiance *= emissiveColor.rgb;\n  // subtle surface glow from city lights\n  diffuseColor.rgb += emissiveColor.rgb * 0.35;\n\n  // Cloud negative light map (if clouds texture is bound)\n  #ifdef USE_MAP\n    vec2 uvCloud = vec2(vMapUv.x - uv_xOffset, vMapUv.y);\n    float cloudsMapValue = texture2D(tClouds, uvCloud).r;\n    diffuseColor.rgb *= mix(1.0, max(1.0 - cloudsMapValue, 0.35), hasClouds);\n  #endif\n\n  // Lighter, stylized night shading with a broad soft terminator\n  float ndotl = dot(normal, directionalLights[0].direction);\n  float shade = smoothstep(-0.28, 0.10, ndotl);\n  diffuseColor.rgb *= mix(0.45, 1.0, shade);\n\n  // Boost saturation a bit for a more cartographic look\n  float avg = (diffuseColor.r + diffuseColor.g + diffuseColor.b) / 3.0;\n  diffuseColor.rgb = mix(vec3(avg), diffuseColor.rgb, 1.15);\n\n  // Subtle atmospheric fresnel on surface\n  float intensity = 1.3 - dot( normal, vec3( 0.0, 0.0, 1.0 ) );\n  vec3 atmosphere = vec3(0.35, 0.65, 1.0) * pow(intensity, 5.0) * 0.8;\n  diffuseColor.rgb += atmosphere;`
     );
     // Save shader reference for runtime uniform updates
     (earthMat as any).userData.shader = shader;
@@ -137,17 +151,24 @@ function init() {
   sphere.rotation.y = -0.55;
   scene.add(sphere);
 
+  // ensure clouds (if already created by async loads) are synced to sphere
+  if (clouds) {
+    clouds.rotation.x = sphere.rotation.x;
+    clouds.rotation.y = sphere.rotation.y;
+    clouds.position.copy(sphere.position);
+  }
+
   // atmosphere
-  const atmoGeo = new THREE.SphereGeometry(1.11, 80, 80);
+  const atmoGeo = new THREE.SphereGeometry(1.12, 96, 96);
   const atmoMat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     side: THREE.BackSide,
     uniforms: {
-      atmOpacity: { value: 0.85 },
-      atmPowFactor: { value: 4.6 },
-      atmMultiplier: { value: 20.0 },
+      atmOpacity: { value: 0.75 },
+      atmPowFactor: { value: 4.2 },
+      atmMultiplier: { value: 18.0 },
     },
     vertexShader: `
       varying vec3 vNormal;
@@ -178,56 +199,109 @@ function init() {
   scene.add(atmosphere);
 
   const loader = new THREE.TextureLoader();
-  // Albedo
+  // Albedo (prefer generated WebP/PNG, fallback to bundled)
+  const setAlbedo = (tex: THREE.Texture) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    if (earthMat) {
+      earthMat.map = tex;
+      earthMat.needsUpdate = true;
+    }
+    albedoLoaded = true;
+    maybeEmitReady();
+  };
   loader.load(
-    "/textures/earth-blue-marble.jpg",
-    (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-      if (earthMat) {
-        earthMat.map = tex;
-        earthMat.needsUpdate = true;
-      }
-    },
-    undefined,
-    () => console.warn("[HeroGlobe] Missing /textures/earth-blue-marble.jpg")
-  );
-  // Prefer dedicated land bump if available
-  loader.load(
-    "/textures/earth_bump.jpg",
-    (tex) => {
-      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.minFilter = THREE.LinearFilter;
-      if (earthMat) {
-        earthMat.bumpMap = tex;
-        earthMat.bumpScale = 0.035; // small but visible mountains
-        earthMat.needsUpdate = true;
-      }
-    },
+    "/textures/globe/earth_albedo.webp",
+    (tex) => setAlbedo(tex),
     undefined,
     () => {
-      // Fallback: use bathymetry for subtle relief and ocean maps
       loader.load(
-        "/textures/ne_bathy.png",
-        (bathy) => {
-          bathy.wrapS = bathy.wrapT = THREE.ClampToEdgeWrapping;
-          bathy.minFilter = THREE.LinearFilter;
-          if (earthMat) {
-            earthMat.bumpMap = bathy;
-            earthMat.bumpScale = 0.015;
-            earthMat.roughnessMap = bathy;
-            earthMat.metalnessMap = bathy;
-            oceanTex = bathy;
-            earthMat.needsUpdate = true;
-          }
-        },
+        "/textures/globe/earth_albedo.png",
+        (tex) => setAlbedo(tex),
         undefined,
-        () =>
-          console.warn(
-            "[HeroGlobe] Missing /textures/earth_bump.jpg and /textures/ne_bathy.png"
-          )
+        () => {
+          // fallback to bundled texture
+          loader.load(
+            "/textures/earth-blue-marble.jpg",
+            (tex) => setAlbedo(tex),
+            undefined,
+            () =>
+              console.warn(
+                "[HeroGlobe] Missing albedo in /textures/globe and bundled"
+              )
+          );
+        }
       );
     }
+  );
+  // Prefer generated bump + roughness (WebP/PNG)
+  const setBump = (tex: THREE.Texture) => {
+    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    if (earthMat) {
+      earthMat.bumpMap = tex;
+      earthMat.bumpScale = 0.02;
+      earthMat.needsUpdate = true;
+    }
+  };
+  loader.load(
+    "/textures/globe/earth_bump.webp",
+    (tex) => setBump(tex),
+    undefined,
+    () => {
+      loader.load(
+        "/textures/globe/earth_bump.png",
+        (tex) => setBump(tex),
+        undefined,
+        () => {
+          // fallback to legacy bump, else to bathymetry
+          loader.load(
+            "/textures/earth_bump.jpg",
+            (tex) => setBump(tex),
+            undefined,
+            () => {
+              loader.load(
+                "/textures/ne_bathy.png",
+                (bathy) => {
+                  bathy.wrapS = bathy.wrapT = THREE.ClampToEdgeWrapping;
+                  bathy.minFilter = THREE.LinearFilter;
+                  if (earthMat) {
+                    earthMat.bumpMap = bathy;
+                    earthMat.bumpScale = 0.012;
+                    earthMat.roughnessMap = bathy;
+                    earthMat.metalnessMap = bathy;
+                    oceanTex = bathy;
+                    earthMat.needsUpdate = true;
+                  }
+                },
+                undefined,
+                () =>
+                  console.warn("[HeroGlobe] Missing bump maps and bathymetry")
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+
+  // Generated roughness map (optional)
+  loader.load(
+    "/textures/globe/earth_roughness.png",
+    (tex) => {
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.generateMipmaps = true;
+      if (earthMat) {
+        earthMat.roughnessMap = tex;
+        earthMat.needsUpdate = true;
+      }
+    },
+    undefined,
+    () => {}
   );
   // Night lights (optional)
   loader.load(
@@ -247,57 +321,49 @@ function init() {
         "[HeroGlobe] Missing /textures/night_lights.png (night lights disabled)"
       )
   );
-  // Clouds layer (optional)
+  // Clouds layer (optional; prefer WebP)
+  const setupClouds = (tex: THREE.Texture) => {
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.minFilter = THREE.LinearFilter;
+    tex.flipY = false;
+    cloudsTex = tex;
+    const cloudGeo = new THREE.SphereGeometry(1.062, 160, 160);
+    const cloudsMat = new THREE.MeshStandardMaterial({
+      alphaMap: tex,
+      transparent: true,
+      depthWrite: false,
+      opacity: 0.98,
+      color: new THREE.Color(0xffffff),
+    });
+    clouds = new THREE.Mesh(cloudGeo, cloudsMat);
+    clouds.rotation.x = sphere.rotation.x;
+    clouds.rotation.y = sphere.rotation.y;
+    clouds.position.copy(sphere.position);
+    scene.add(clouds);
+    if (earthMat && (earthMat as any).userData.shader) {
+      (earthMat as any).userData.shader.uniforms.tClouds.value = tex;
+      (earthMat as any).userData.shader.uniforms.hasClouds.value = 1.0;
+    }
+  };
   loader.load(
-    "/textures/clouds.png",
-    (tex) => {
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.minFilter = THREE.LinearFilter;
-      tex.flipY = false;
-      cloudsTex = tex;
-      const cloudGeo = new THREE.SphereGeometry(1.065, 160, 160);
-      const cloudsMat = new THREE.MeshStandardMaterial({
-        alphaMap: tex,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.9,
-        color: new THREE.Color(0xffffff),
-      });
-      clouds = new THREE.Mesh(cloudGeo, cloudsMat);
-      clouds.rotation.x = sphere.rotation.x;
-      clouds.rotation.y = sphere.rotation.y;
-      scene.add(clouds);
-      // if shader is compiled, bind clouds texture uniform
-      if (earthMat && (earthMat as any).userData.shader) {
-        (earthMat as any).userData.shader.uniforms.tClouds.value = tex;
-        (earthMat as any).userData.shader.uniforms.hasClouds.value = 1.0;
-      }
-    },
+    "/textures/globe/clouds.webp",
+    (tex) => setupClouds(tex),
     undefined,
     () => {
-      // Fallback: generate procedural clouds
-      console.warn(
-        "[HeroGlobe] Missing /textures/clouds.png, generating procedural clouds"
+      loader.load(
+        "/textures/clouds.png",
+        (tex) => setupClouds(tex),
+        undefined,
+        () => {
+          // Fallback: generate procedural clouds
+          console.warn(
+            "[HeroGlobe] Missing clouds textures, generating procedural clouds"
+          );
+          const tex = generateCloudsTexture(1024, 512);
+          setupClouds(tex);
+        }
       );
-      const tex = generateCloudsTexture(1024, 512);
-      cloudsTex = tex;
-      const cloudGeo = new THREE.SphereGeometry(1.065, 160, 160);
-      const cloudsMat = new THREE.MeshStandardMaterial({
-        alphaMap: tex,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.9,
-        color: new THREE.Color(0xffffff),
-      });
-      clouds = new THREE.Mesh(cloudGeo, cloudsMat);
-      clouds.rotation.x = sphere.rotation.x;
-      clouds.rotation.y = sphere.rotation.y;
-      scene.add(clouds);
-      if (earthMat && (earthMat as any).userData.shader) {
-        (earthMat as any).userData.shader.uniforms.tClouds.value = tex;
-        (earthMat as any).userData.shader.uniforms.hasClouds.value = 1.0;
-      }
     }
   );
 
@@ -340,13 +406,14 @@ function animate() {
   if (Math.abs(rotVelY) < 0.00002) rotVelY = 0;
   const ek = Math.min(1, t / 1200.0);
   const ease = 1.0 - Math.pow(1.0 - ek, 3.0);
-  sphere.position.y = (-state.yOffset + ease * state.yOffset) * 1.2;
+  sphere.position.y = (-state.yOffset + ease * state.yOffset) * 1.05;
   if (atmosphere) {
     atmosphere.position.copy(sphere.position);
   }
-  // rotate clouds faster and update shader clouds uv offset
+  // rotate clouds faster and keep them attached to sphere position
   if (clouds) {
-    clouds.rotation.y += deltaY * 2.0;
+    clouds.rotation.y += deltaY * 1.1;
+    clouds.position.copy(sphere.position);
   }
   if (earthMat && (earthMat as any).userData.shader && cloudsTex) {
     const shader = (earthMat as any).userData.shader;
@@ -354,6 +421,10 @@ function animate() {
       (shader.uniforms.uv_xOffset.value + deltaY / (Math.PI * 2)) % 1;
   }
   renderer.render(scene, camera);
+  if (!firstFrameRendered) {
+    firstFrameRendered = true;
+    maybeEmitReady();
+  }
 }
 
 function attachEvents() {
