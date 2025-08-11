@@ -240,26 +240,19 @@ function init() {
     maybeEmitReady();
   };
   loader.load(
-    "/textures/globe/earth_albedo.webp",
+    "/textures/globe/earth_albedo.png",
     (tex) => setAlbedo(tex),
     undefined,
     () => {
+      // fallback to bundled texture
       loader.load(
-        "/textures/globe/earth_albedo.png",
+        "/textures/earth-blue-marble.jpg",
         (tex) => setAlbedo(tex),
         undefined,
-        () => {
-          // fallback to bundled texture
-          loader.load(
-            "/textures/earth-blue-marble.jpg",
-            (tex) => setAlbedo(tex),
-            undefined,
-            () =>
-              console.warn(
-                "[HeroGlobe] Missing albedo in /textures/globe and bundled"
-              )
-          );
-        }
+        () =>
+          console.warn(
+            "[HeroGlobe] Missing albedo in /textures/globe and bundled"
+          )
       );
     }
   );

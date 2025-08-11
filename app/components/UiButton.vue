@@ -36,7 +36,7 @@ const variantCls = computed(() => {
     case "ghost":
       return "bg-transparent text-base-dark hover:bg-base-dark/5";
     default:
-      return "bg-base-dark text-parchment shadow-[0_2px_6px_rgba(63,47,30,0.14)] hover:bg-base-dark/90";
+      return "bg-[var(--base-dark)] text-[var(--parchment)] shadow-[0_2px_6px_rgba(63,47,30,0.14)] hover:opacity-90";
   }
 });
 

@@ -4,7 +4,10 @@
     "types": [
       "@types/node",
       "nitropack"
-    ]
+    ],
+    "paths": {
+      "@/*": ["./app/*"]
+    }
   },
   "files": [],
   "references": [

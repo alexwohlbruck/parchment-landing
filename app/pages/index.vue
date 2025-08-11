@@ -203,13 +203,9 @@ onBeforeUnmount(() => {
           style="
             mask-image: linear-gradient(
               to bottom,
+              rgba(0, 0, 0, 0.1),
               rgba(0, 0, 0, 0.5),
-              rgba(0, 0, 0, 1)
-            );
-            -webkit-mask-image: linear-gradient(
-              to bottom,
-              rgba(0, 0, 0, 0.5),
-              rgba(0, 0, 0, 1)
+              rgba(0, 0, 0, 0.8)
             );
           "
         />
@@ -280,7 +276,7 @@ onBeforeUnmount(() => {
       </UiNavbar>
 
       <div
-        class="relative z-10 mx-auto flex w-[min(1100px,92%)] max-w-5xl flex-col items-center pt-48 will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
+        class="relative z-10 mx-auto flex w-[min(1100px,92%)] max-w-5xl h-[65dvh] flex-col items-center justify-center will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
       >
         <h1
           class="hero-tilt text-center font-serif text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
@@ -320,7 +316,7 @@ onBeforeUnmount(() => {
       id="try"
       class="relative snap-start bg-space text-parchment min-h-[100dvh] flex items-center"
     >
-      <div class="flex flex-col items-left justify-left">
+      <div class="flex flex-col items-left justify-left p-20">
         <h2
           class="font-serif text-[clamp(2rem,6vw,4rem)] leading-tight md:col-span-1"
         >
@@ -331,7 +327,7 @@ onBeforeUnmount(() => {
           Parchment enables you to explore the entire earth, down to the most
           remote regions of the globe.
         </p>
-        <UiButton class="w-fit" variant="outline" size="lg"
+        <UiButton class="w-fit" variant="outline"
           >Become an OSM cartographer</UiButton
         >
       </div>
@@ -364,25 +360,5 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-@keyframes navIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -10px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-@keyframes heroIn {
-  from {
-    opacity: 0;
-    transform: translateY(28px) rotateX(18deg) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) rotateX(0deg) scale(1);
-  }
-}
 /* Globe uses JS to animate left/top/width/height via transitions */
 </style>
