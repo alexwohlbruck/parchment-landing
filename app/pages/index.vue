@@ -1,13 +1,13 @@
 <script setup lang="ts">
 const { data: auth } = await useFetch("/api/auth-status");
-import { onMounted, ref, onBeforeUnmount } from "vue";
+import { onMounted, ref } from "vue";
 import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
-import { useGlobeMover } from "@/composables/useGlobeMover";
+import Input from "@/components/ui/input/Input.vue";
 import HeroGlobe from "@/components/HeroGlobe.client.vue";
 
 const motionNav = {
-  initial: { opacity: 0, y: -16 },
+  initial: { opacity: 0, y: -100 },
   enter: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 } as const;
 
@@ -31,150 +31,14 @@ const isClient = ref(false);
 onMounted(() => {
   isClient.value = true;
 });
-const {
-  globeRef,
-  activeTarget,
-  positionGlobe,
-  positionGlobeToRect,
-  attach,
-  detach,
-} = useGlobeMover();
 
-const heroTargetRef = ref<HTMLDivElement | null>(null);
-const tryTargetRef = ref<HTMLDivElement | null>(null);
-let heroRect: {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-} | null = null;
-let tryRect: {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-} | null = null;
-
-// Select the ghost container nearest to viewport center
-function selectNearestTarget(): HTMLElement | null {
-  const candidates: HTMLElement[] = [];
-  if (heroTargetRef.value) candidates.push(heroTargetRef.value);
-  if (tryTargetRef.value) candidates.push(tryTargetRef.value);
-  if (!candidates.length) return null;
-
-  const vh = innerHeight;
-  const centerY = vh / 2;
-  let best: { el: HTMLElement; dist: number } | null = null;
-  for (const el of candidates) {
-    const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) continue;
-    const cy = r.top + r.height / 2;
-    const dist = Math.abs(cy - centerY);
-    if (!best || dist < best.dist) best = { el, dist };
-  }
-  return best?.el || null;
-}
-
-function computeRect(el: HTMLElement) {
-  const r = el.getBoundingClientRect();
-  return { left: r.left, top: r.top, width: r.width, height: r.height };
-}
-
-let root: HTMLElement | null = null;
-let scrollHandler: (() => void) | null = null;
-let resizeHandler: (() => void) | null = null;
-let switchScheduled = false;
-let lastSwitchAt = 0;
-const SWITCH_COOLDOWN_MS = 120; // hysteresis to avoid rapid flipping near boundaries
-
-// Intro sit-up animation (3s) ending at normal state; enable scroll tilt on animation end
-onMounted(() => {
-  root = document.querySelector("main") as HTMLElement | null;
-  if (root) attach(root);
-  // Intro animations handled via v-motion in template
-
-  // Initial placement: choose nearest target and place instantly
-  requestAnimationFrame(() => {
-    const next = selectNearestTarget();
-    if (next) {
-      activeTarget.value = next;
-      positionGlobe(next, false);
-      // cache rects for precise return positions
-      if (heroTargetRef.value) {
-        const r = heroTargetRef.value.getBoundingClientRect();
-        heroRect = {
-          left: r.left,
-          top: r.top,
-          width: r.width,
-          height: r.height,
-        };
-      }
-      if (tryTargetRef.value) {
-        const r2 = tryTargetRef.value.getBoundingClientRect();
-        tryRect = {
-          left: r2.left,
-          top: r2.top,
-          width: r2.width,
-          height: r2.height,
-        };
-      }
-    }
-  });
-
-  // Manual scroll-driven target switching with animation
-  const updateActiveTarget = () => {
-    if (switchScheduled) return;
-    switchScheduled = true;
-    requestAnimationFrame(() => {
-      switchScheduled = false;
-      const now = performance.now();
-      const current = activeTarget.value;
-      const next = selectNearestTarget();
-      if (!next) return;
-      if (next !== current && now - lastSwitchAt > SWITCH_COOLDOWN_MS) {
-        lastSwitchAt = now;
-        activeTarget.value = next;
-        // Use cached rects if available to ensure consistent return positions
-        if (next === heroTargetRef.value && heroRect) {
-          positionGlobeToRect(heroRect, true);
-        } else if (next === tryTargetRef.value && tryRect) {
-          positionGlobeToRect(tryRect, true);
-        } else {
-          const rect = computeRect(next);
-          positionGlobeToRect(rect, true);
-        }
-      }
-    });
-  };
-
-  scrollHandler = () => updateActiveTarget();
-  resizeHandler = () => {
-    // Re-cache rects on resize for stability
-    if (heroTargetRef.value) {
-      const r = heroTargetRef.value.getBoundingClientRect();
-      heroRect = { left: r.left, top: r.top, width: r.width, height: r.height };
-    }
-    if (tryTargetRef.value) {
-      const r2 = tryTargetRef.value.getBoundingClientRect();
-      tryRect = {
-        left: r2.left,
-        top: r2.top,
-        width: r2.width,
-        height: r2.height,
-      };
-    }
-    updateActiveTarget();
-  };
-
-  if (root) root.addEventListener("scroll", scrollHandler, { passive: true });
-  window.addEventListener("resize", resizeHandler);
-});
-
-onBeforeUnmount(() => {
-  if (root && scrollHandler) root.removeEventListener("scroll", scrollHandler);
-  if (resizeHandler) window.removeEventListener("resize", resizeHandler);
-  detach();
-});
+const links = [
+  { href: "/download", label: "Download" },
+  { href: "/developers", label: "Developers" },
+  { href: "/blog", label: "Blog" },
+  { href: "/resources", label: "Resources" },
+  { href: "/pricing", label: "Pricing" },
+];
 </script>
 
 <template>
@@ -183,6 +47,7 @@ onBeforeUnmount(() => {
       id="hero"
       class="relative min-h-[100dvh] overflow-hidden bg-[#E3D9CF] snap-start"
     >
+      <!-- Parchment map bg -->
       <div class="absolute inset-0 z-0">
         <img
           src="/map.png"
@@ -199,10 +64,14 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div v-if="isClient" v-motion="motionNav">
+      <!-- Nav bar -->
+      <div class="relative z-30">
         <UiNavbar>
           <template #brand>
-            <div class="flex items-center gap-3 text-base-dark">
+            <div
+              class="flex items-center gap-2 text-base-dark cursor-pointer"
+              href="/"
+            >
               <svg
                 class="size-7"
                 xmlns="http://www.w3.org/2000/svg"
@@ -224,52 +93,24 @@ onBeforeUnmount(() => {
               <span class="font-medium">Parchment</span>
             </div>
           </template>
-          <li>
+          <li v-for="link in links" :key="link.href">
             <a
               href="#"
               class="cursor-pointer text-base-dark/70 hover:text-base-dark rounded"
             >
-              Home
+              {{ link.label }}
             </a>
           </li>
-          <li>
-            <a
-              href="#"
-              class="cursor-pointer text-base-dark/70 hover:text-base-dark rounded"
-            >
-              Maps
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              class="cursor-pointer text-base-dark/70 hover:text-base-dark rounded"
-            >
-              Download
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              class="cursor-pointer text-base-dark/70 hover:text-base-dark rounded"
-            >
-              Developers
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              class="cursor-pointer text-base-dark/70 hover:text-base-dark rounded"
-            >
-              Demo
-            </a>
-          </li>
+
           <template #cta>
-            <Button href="#" variant="ghost" size="sm">Launch app →</Button>
+            <Button href="https://parchment.app" variant="ghost" size="sm"
+              >Launch app →</Button
+            >
           </template>
         </UiNavbar>
       </div>
 
+      <!-- Hero content -->
       <div
         class="relative z-10 mx-auto flex w-[min(1100px,92%)] max-w-5xl h-[65dvh] flex-col items-center justify-center will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
       >
@@ -284,7 +125,7 @@ onBeforeUnmount(() => {
               >next generation</span
             >
             of<br />
-            digital mapping
+            digital maps
           </h1>
         </div>
         <div v-if="isClient" v-motion="motionP">
@@ -294,66 +135,33 @@ onBeforeUnmount(() => {
           </p>
         </div>
         <div v-if="isClient" v-motion="motionCtas">
-          <div class="mt-6 flex gap-3">
-            <Button variant="outline" size="md" class="shadow">Download</Button>
-            <Button href="#" variant="dark" size="md" class="shadow">
-              Try Parchment Maps
+          <div class="mt-6 flex gap-2">
+            <!-- <Button variant="outline" size="md" class="shadow">Download</Button> -->
+            <Input
+              variant="outline"
+              class="shadow bg-white h-10"
+              placeholder="Name"
+            />
+            <Input
+              type="email"
+              placeholder="Email"
+              variant="outline"
+              class="shadow bg-white h-10"
+            />
+            <Button href="#" variant="dark" size="md" class="shadow" disabled>
+              Join waitlist
             </Button>
           </div>
         </div>
       </div>
 
-      <!-- Globe render target for hero placement (invisible) -->
+      <!-- Globe -->
       <div
-        ref="heroTargetRef"
-        class="absolute left-1/2 top-[50%] -translate-x-1/2 w-[200vw] md:w-[150vw] lg:w-[100vw]"
+        class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 w-[150vw] z-20"
         style="aspect-ratio: 1/1"
-      ></div>
-    </section>
-
-    <section
-      id="try"
-      class="relative snap-start bg-space text-parchment min-h-[100dvh] flex items-center"
-    >
-      <div class="flex flex-col items-left justify-left p-20">
-        <h2
-          class="font-serif text-[clamp(2rem,6vw,4rem)] leading-tight md:col-span-1"
-        >
-          Find your inner <span class="text-brand">Magellan</span>
-        </h2>
-        <p class="max-w-2xl text-base text-parchment/80 md:col-span-1">
-          Sourcing from OpenStreetMap, the world’s most extensive map database,
-          Parchment enables you to explore the entire earth, down to the most
-          remote regions of the globe.
-        </p>
-        <Button class="w-fit" variant="primary">
-          Become an OSM cartographer
-        </Button>
-      </div>
-      <!-- Globe render target for Magellan placement (invisible) -->
-      <div
-        ref="tryTargetRef"
-        class="absolute top-1/2 right-0 -translate-y-1/2 translate-x-[10%] w-[55vw] hidden md:block"
-        style="aspect-ratio: 1/1; pointer-events: none"
-      ></div>
-    </section>
-
-    <!-- Single fixed globe element positioned to nearest target -->
-    <div
-      ref="globeRef"
-      class="pointer-events-none fixed z-[5]"
-      style="
-        left: 0;
-        top: 0;
-        width: 0;
-        height: 0;
-        will-change: transform;
-        transform: translate3d(0, 0, 0) scale(1, 1);
-      "
-    >
-      <div class="absolute inset-0 overflow-hidden">
+      >
         <HeroGlobe />
       </div>
-    </div>
+    </section>
   </main>
 </template>

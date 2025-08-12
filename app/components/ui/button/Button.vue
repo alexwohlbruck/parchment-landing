@@ -36,15 +36,23 @@ const props = withDefaults(
     variant?: ButtonVariants["variant"];
     size?: ButtonVariants["size"];
     class?: string;
+    disabled?: boolean;
   }>(),
   {
     variant: "primary",
     size: "md",
+    disabled: false,
   }
 );
 
 const classes = computed(() =>
-  cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)
+  cn(
+    buttonVariants({ variant: props.variant, size: props.size }),
+    props.class,
+    {
+      "bg-base-dark/80 pointer-events-none": props.disabled,
+    }
+  )
 );
 </script>
 

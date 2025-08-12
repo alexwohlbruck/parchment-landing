@@ -8,7 +8,8 @@ let renderer: THREE.WebGLRenderer | null = null;
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
 let sphere: THREE.Mesh;
-let earthMat: THREE.ShaderMaterial | null = null;
+let tiltGroup: THREE.Group | null = null;
+let earthMat!: THREE.ShaderMaterial;
 let clouds: THREE.Mesh | null = null;
 let cloudsTex: THREE.Texture | null = null;
 let atmosphere: THREE.Mesh | null = null;
@@ -74,10 +75,8 @@ function generateCloudsTexture(
 
 const state = reactive({
   startedAt: 0,
-  spinSpeed: 0.1,
+  // Use a single steady spin speed; no intro easing
   minSpeed: 0.05,
-  easingDuration: 5000,
-  yOffset: 0.7,
 });
 
 // interaction state
@@ -106,6 +105,12 @@ function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
   camera.position.set(0, 0, 3.1);
+
+  // Group to apply Earth's axial tilt
+  tiltGroup = new THREE.Group();
+  // Earth's axial tilt is ~23.5 degrees
+  tiltGroup.rotation.z = THREE.MathUtils.degToRad(23.5);
+  scene.add(tiltGroup);
 
   const geometry = new THREE.SphereGeometry(1.06, 192, 192);
   earthMat = new THREE.ShaderMaterial({
@@ -178,9 +183,10 @@ function init() {
     `,
   }) as any;
   sphere = new THREE.Mesh(geometry, earthMat);
-  sphere.rotation.x = 0.18;
+  // Start with a pleasing facing angle, rotation around local Y for spin
+  sphere.rotation.x = 0.0;
   sphere.rotation.y = -0.55;
-  scene.add(sphere);
+  tiltGroup.add(sphere);
 
   // Add outer atmospheric glow
   const atmoGeo = new THREE.SphereGeometry(1.23, 64, 64);
@@ -216,7 +222,7 @@ function init() {
   atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
   atmosphere.position.copy(sphere.position);
   atmosphere.renderOrder = 1; // Ensure it renders after other objects
-  scene.add(atmosphere);
+  tiltGroup.add(atmosphere);
 
   // ensure clouds (if already created by async loads) are synced to sphere
   if (clouds) {
@@ -232,10 +238,8 @@ function init() {
     tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.generateMipmaps = true;
-    if (earthMat) {
-      (earthMat as any).uniforms.map.value = tex;
-      earthMat.needsUpdate = true;
-    }
+    (earthMat as any).uniforms.map.value = tex;
+    earthMat.needsUpdate = true;
     albedoLoaded = true;
     maybeEmitReady();
   };
@@ -260,7 +264,7 @@ function init() {
     clouds.rotation.x = sphere.rotation.x;
     clouds.rotation.y = sphere.rotation.y;
     clouds.position.copy(sphere.position);
-    scene.add(clouds);
+    tiltGroup!.add(clouds);
   };
   loader.load("/textures/clouds.jpg", (tex) => setupClouds(tex));
 
@@ -295,15 +299,14 @@ function animate() {
   frameId = requestAnimationFrame(animate);
   if (!renderer) return;
   const t = performance.now() - state.startedAt;
-  const k = Math.min(1, t / state.easingDuration);
-  const speed = state.spinSpeed * (1 - k) + state.minSpeed * k;
+  const speed = state.minSpeed;
   const deltaY = speed * (1 / 60) + rotVelY;
+  // Spin around the tilted axis by rotating the sphere about its local Y
   sphere.rotation.y += deltaY;
   rotVelY *= 0.96;
   if (Math.abs(rotVelY) < 0.00002) rotVelY = 0;
-  const ek = Math.min(1, t / 1200.0);
-  const ease = 1.0 - Math.pow(1.0 - ek, 3.0);
-  sphere.position.y = (-state.yOffset + ease * state.yOffset) * 1.05;
+  // No intro lift animation; keep Y position fixed
+  if (sphere.position.y !== 0) sphere.position.y = 0;
 
   // Keep atmosphere attached to sphere
   if (atmosphere) {
@@ -344,6 +347,7 @@ function attachEvents() {
     if (isTouch && Math.abs(dx) > Math.abs(dy) * 1.2) {
       // preventDefault will be called by the touch handler wrapper
     }
+    // Rotate around spin axis (local Y) and slightly pitch for feel
     sphere.rotation.y += dx * sens;
     sphere.rotation.x = THREE.MathUtils.clamp(
       sphere.rotation.x + dy * sens * 0.2,

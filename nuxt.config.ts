@@ -4,7 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  // Use Tailwind v4 via the official Vite plugin + CSS entry. No PostCSS plugin required.
   css: ["~/assets/css/tailwind.css"],
   vite: {
     plugins: [tailwindcss()],
@@ -14,13 +13,13 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: "Parchment Maps",
+      title: "Parchment",
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
           name: "description",
           content:
-            "Open-source Google Maps alternative. Fast, private, and developer-friendly.",
+            "opacity-80 A modern mapping and navigation app based on open data and open source software.",
         },
       ],
       link: [
@@ -33,6 +32,11 @@ export default defineNuxtConfig({
         {
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap",
+        },
+        {
+          rel: "icon",
+          type: "image/svg+xml",
+          href: "/favicon.svg",
         },
       ],
     },
