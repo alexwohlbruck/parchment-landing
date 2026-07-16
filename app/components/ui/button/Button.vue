@@ -32,7 +32,6 @@ type ButtonVariants = VariantProps<typeof buttonVariants>;
 const props = withDefaults(
   defineProps<{
     href?: string;
-    disabled?: boolean;
     variant?: ButtonVariants["variant"];
     size?: ButtonVariants["size"];
     class?: string;

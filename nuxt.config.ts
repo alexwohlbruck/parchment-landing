@@ -5,11 +5,26 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   css: ["~/assets/css/tailwind.css"],
+  components: [
+    {
+      path: "~/components",
+      extensions: ["vue"],
+      pathPrefix: false,
+    },
+  ],
   vite: {
     plugins: [tailwindcss()],
   },
   nitro: {
     preset: "bun",
+  },
+  runtimeConfig: {
+    googleServiceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    googleServiceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
+    googleSheetsId: process.env.GOOGLE_SHEETS_ID,
+    public: {
+      abCookieName: "ab_variant",
+    },
   },
   app: {
     head: {
@@ -19,7 +34,7 @@ export default defineNuxtConfig({
         {
           name: "description",
           content:
-            "opacity-80 A modern mapping and navigation app based on open data and open source software.",
+            "A modern mapping and navigation app based on open data and open source software.",
         },
       ],
       link: [
@@ -31,7 +46,7 @@ export default defineNuxtConfig({
         },
         {
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap",
+          href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap",
         },
         {
           rel: "icon",

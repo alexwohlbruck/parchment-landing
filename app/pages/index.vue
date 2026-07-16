@@ -1,44 +1,78 @@
 <script setup lang="ts">
-const { data: auth } = await useFetch("/api/auth-status");
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
+import { useForm, type SubmissionHandler } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import { z } from "zod";
+import { toast } from "vue-sonner";
 import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
 import HeroGlobe from "@/components/HeroGlobe.client.vue";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormControl,
+} from "@/components/ui/form";
 
-const motionNav = {
-  initial: { opacity: 0, y: -100 },
-  enter: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-} as const;
+// Staggered fade-up entrance for the hero elements (client-only via <ClientOnly>)
+const fadeUp = (delay: number) =>
+  ({
+    initial: { opacity: 0, y: 24 },
+    enter: { opacity: 1, y: 0, transition: { duration: 0.7, delay } },
+  }) as const;
 
-const motionH1 = {
-  initial: { opacity: 0, y: 24 },
-  enter: { opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.1 } },
-} as const;
+// Placeholder nav — no destination pages exist yet
+const links = [
+  { href: "#", label: "Download" },
+  { href: "#", label: "Developers" },
+  { href: "#", label: "Blog" },
+  { href: "#", label: "Resources" },
+  { href: "#", label: "Pricing" },
+];
 
-const motionP = {
-  initial: { opacity: 0, y: 24 },
-  enter: { opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.25 } },
-} as const;
+const WaitlistSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Please enter your name")
+    .max(100, "Name is too long"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email"),
+});
+type WaitlistValues = z.infer<typeof WaitlistSchema>;
 
-const motionCtas = {
-  initial: { opacity: 0, y: 24 },
-  enter: { opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.4 } },
-} as const;
-
-// Only enable motion on client to avoid SSR directive hooks
-const isClient = ref(false);
-onMounted(() => {
-  isClient.value = true;
+const form = useForm<WaitlistValues>({
+  validationSchema: toTypedSchema(WaitlistSchema),
+  initialValues: { name: "", email: "" },
 });
 
-const links = [
-  { href: "/download", label: "Download" },
-  { href: "/developers", label: "Developers" },
-  { href: "/blog", label: "Blog" },
-  { href: "/resources", label: "Resources" },
-  { href: "/pricing", label: "Pricing" },
-];
+const submitting = ref(false);
+
+const abCookieName =
+  (useRuntimeConfig().public.abCookieName as string) || "ab_variant";
+const abVariant = useCookie<string>(abCookieName);
+
+const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
+  submitting.value = true;
+  try {
+    const { message } = await $fetch("/api/waitlist", {
+      method: "POST",
+      body: {
+        name: values.name,
+        email: values.email,
+        variant: abVariant.value || "A",
+      },
+    });
+    toast.success(message || "You're on the list!");
+    form.resetForm();
+  } catch (err: any) {
+    toast.error(err?.data?.message || err?.message || "Something went wrong");
+  } finally {
+    submitting.value = false;
+  }
+};
 </script>
 
 <template>
@@ -47,20 +81,13 @@ const links = [
       id="hero"
       class="relative min-h-[100dvh] overflow-hidden bg-[#E3D9CF] snap-start"
     >
-      <!-- Parchment map bg -->
+      <!-- Parchment map background -->
       <div class="absolute inset-0 z-0">
         <img
           src="/map.png"
-          alt="parchment"
-          class="h-[100dvh] w-[100dvw] object-cover object-center opacity-100"
-          style="
-            mask-image: linear-gradient(
-              to bottom,
-              rgba(0, 0, 0, 0.1),
-              rgba(0, 0, 0, 0.5),
-              rgba(0, 0, 0, 0.8)
-            );
-          "
+          alt=""
+          aria-hidden="true"
+          class="map-mask h-[100dvh] w-[100dvw] object-cover object-center"
         />
       </div>
 
@@ -68,10 +95,7 @@ const links = [
       <div class="relative z-30">
         <UiNavbar>
           <template #brand>
-            <div
-              class="flex items-center gap-2 text-base-dark cursor-pointer"
-              href="/"
-            >
+            <a href="/" class="flex items-center gap-2 text-base-dark">
               <svg
                 class="size-7"
                 xmlns="http://www.w3.org/2000/svg"
@@ -91,11 +115,12 @@ const links = [
                 />
               </svg>
               <span class="font-medium">Parchment</span>
-            </div>
+            </a>
           </template>
-          <li v-for="link in links" :key="link.href">
+
+          <li v-for="link in links" :key="link.label">
             <a
-              href="#"
+              :href="link.href"
               class="cursor-pointer text-base-dark/70 hover:text-base-dark rounded"
             >
               {{ link.label }}
@@ -103,9 +128,9 @@ const links = [
           </li>
 
           <template #cta>
-            <Button href="https://parchment.app" variant="ghost" size="sm"
-              >Launch app →</Button
-            >
+            <Button href="https://parchment.app" variant="ghost" size="sm">
+              Launch app →
+            </Button>
           </template>
         </UiNavbar>
       </div>
@@ -114,45 +139,84 @@ const links = [
       <div
         class="relative z-10 mx-auto flex w-[min(1100px,92%)] max-w-5xl h-[65dvh] flex-col items-center justify-center will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
       >
-        <div v-if="isClient" v-motion="motionH1">
-          <h1
-            class="text-center font-serif text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
-            style="font-variation-settings: 'wght' 700"
-          >
-            The
-            <span
-              class="relative text-brand [text-shadow:2px_2px_0_rgba(63,47,30,0.16)]"
-              >next generation</span
+        <ClientOnly>
+          <div v-motion="fadeUp(0.1)">
+            <h1
+              class="text-center font-serif text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
+              style="font-variation-settings: 'wght' 700"
             >
-            of<br />
-            digital maps
-          </h1>
-        </div>
-        <div v-if="isClient" v-motion="motionP">
-          <p class="mt-4 max-w-2xl text-center text-[1.1rem] text-base-dark/80">
-            Explore the world with beautiful, detailed maps crafted by the
-            community.
-          </p>
-        </div>
-        <div v-if="isClient" v-motion="motionCtas">
-          <div class="mt-6 flex gap-2">
-            <!-- <Button variant="outline" size="md" class="shadow">Download</Button> -->
-            <Input
-              variant="outline"
-              class="shadow bg-white h-10"
-              placeholder="Name"
-            />
-            <Input
-              type="email"
-              placeholder="Email"
-              variant="outline"
-              class="shadow bg-white h-10"
-            />
-            <Button href="#" variant="dark" size="md" class="shadow" disabled>
-              Join waitlist
-            </Button>
+              The
+              <span
+                class="relative text-brand [text-shadow:2px_2px_0_rgba(63,47,30,0.16)]"
+                >next generation</span
+              >
+              of<br />
+              digital maps
+            </h1>
           </div>
-        </div>
+          <div v-motion="fadeUp(0.25)">
+            <p class="mt-4 max-w-2xl text-center text-[1.1rem] text-base-dark/80">
+              Explore the world with beautiful, detailed maps crafted by the
+              community.
+            </p>
+          </div>
+          <div v-motion="fadeUp(0.4)">
+            <Form
+              class="mt-6 w-full max-w-xl"
+              as="form"
+              @submit="form.handleSubmit(onSubmit)"
+            >
+              <div class="flex gap-2">
+                <FormField
+                  v-slot="{ value, handleChange, handleBlur }"
+                  name="name"
+                >
+                  <FormItem class="flex-1">
+                    <FormLabel class="sr-only">Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        :model-value="value"
+                        placeholder="Name"
+                        class="shadow bg-white h-10"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                </FormField>
+                <FormField
+                  v-slot="{ value, handleChange, handleBlur }"
+                  name="email"
+                >
+                  <FormItem class="flex-[1.2]">
+                    <FormLabel class="sr-only">Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        :model-value="value"
+                        placeholder="Email"
+                        class="shadow bg-white h-10"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                </FormField>
+                <Button
+                  type="submit"
+                  :disabled="submitting"
+                  variant="dark"
+                  size="md"
+                  class="shadow min-w-36"
+                >
+                  {{ submitting ? "Joining..." : "Join waitlist" }}
+                </Button>
+              </div>
+            </Form>
+          </div>
+        </ClientOnly>
       </div>
 
       <!-- Globe -->
@@ -165,3 +229,14 @@ const links = [
     </section>
   </main>
 </template>
+
+<style scoped>
+.map-mask {
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.5),
+    rgba(0, 0, 0, 0.8)
+  );
+}
+</style>
