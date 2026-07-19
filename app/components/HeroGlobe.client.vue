@@ -232,7 +232,7 @@ function init() {
   }
 
   const loader = new THREE.TextureLoader();
-  // Albedo (prefer generated WebP/PNG, fallback to bundled)
+  // Albedo (compressed WebP; see scripts/build-globe-textures.sh to regenerate)
   const setAlbedo = (tex: THREE.Texture) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -243,9 +243,9 @@ function init() {
     albedoLoaded = true;
     maybeEmitReady();
   };
-  loader.load("/textures/earth_albedo.png", (tex) => setAlbedo(tex));
+  loader.load("/textures/earth_albedo.webp", (tex) => setAlbedo(tex));
 
-  // Clouds layer (optional; prefer WebP)
+  // Clouds layer (optional; compressed WebP alpha map)
   const setupClouds = (tex: THREE.Texture) => {
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -266,7 +266,7 @@ function init() {
     clouds.position.copy(sphere.position);
     tiltGroup!.add(clouds);
   };
-  loader.load("/textures/clouds.jpg", (tex) => setupClouds(tex));
+  loader.load("/textures/clouds.webp", (tex) => setupClouds(tex));
 
   state.startedAt = performance.now();
   onResize();

@@ -53,6 +53,18 @@ export default defineNuxtConfig({
           type: "image/svg+xml",
           href: "/favicon.svg",
         },
+        // Warm the globe textures early — they're otherwise only requested
+        // after the JS bundle hydrates and Three.js initializes.
+        {
+          rel: "preload",
+          as: "image",
+          href: "/textures/earth_albedo.webp",
+        },
+        {
+          rel: "preload",
+          as: "image",
+          href: "/textures/clouds.webp",
+        },
       ],
     },
   },

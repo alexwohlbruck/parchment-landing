@@ -50,6 +50,10 @@ const form = useForm<WaitlistValues>({
 
 const submitting = ref(false);
 
+// Globe fades in only once its texture has loaded and the first frame is
+// rendered, so it never pops in as a dark, untextured sphere.
+const globeReady = ref(false);
+
 const abCookieName =
   (useRuntimeConfig().public.abCookieName as string) || "ab_variant";
 const abVariant = useCookie<string>(abCookieName);
@@ -84,9 +88,10 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
       <!-- Parchment map background -->
       <div class="absolute inset-0 z-0">
         <img
-          src="/map.png"
+          src="/map.webp"
           alt=""
           aria-hidden="true"
+          fetchpriority="high"
           class="map-mask h-[100dvh] w-[100dvw] object-cover object-center"
         />
       </div>
@@ -221,10 +226,11 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
 
       <!-- Globe -->
       <div
-        class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 w-[150vw] z-20"
+        class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 w-[150vw] z-20 transition-opacity duration-1000 ease-out"
+        :class="globeReady ? 'opacity-100' : 'opacity-0'"
         style="aspect-ratio: 1/1"
       >
-        <HeroGlobe />
+        <HeroGlobe @ready="globeReady = true" />
       </div>
     </section>
   </main>
