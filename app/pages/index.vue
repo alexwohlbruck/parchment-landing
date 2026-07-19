@@ -4,12 +4,12 @@ import { useForm, type SubmissionHandler } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import { z } from "zod";
 import { toast } from "vue-sonner";
+import { LoaderCircle } from "lucide-vue-next";
 import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
 import HeroGlobe from "@/components/HeroGlobe.client.vue";
 import {
-  Form,
   FormField,
   FormItem,
   FormLabel,
@@ -43,12 +43,12 @@ const WaitlistSchema = z.object({
 });
 type WaitlistValues = z.infer<typeof WaitlistSchema>;
 
-const form = useForm<WaitlistValues>({
+// useForm() provides the field context to the <FormField>s below; isSubmitting
+// is toggled automatically around the async submit handler.
+const { handleSubmit, resetForm, isSubmitting } = useForm<WaitlistValues>({
   validationSchema: toTypedSchema(WaitlistSchema),
   initialValues: { name: "", email: "" },
 });
-
-const submitting = ref(false);
 
 // Globe fades in only once its texture has loaded and the first frame is
 // rendered, so it never pops in as a dark, untextured sphere.
@@ -59,7 +59,6 @@ const abCookieName =
 const abVariant = useCookie<string>(abCookieName);
 
 const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
-  submitting.value = true;
   try {
     const { message } = await $fetch("/api/waitlist", {
       method: "POST",
@@ -70,13 +69,14 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
       },
     });
     toast.success(message || "You're on the list!");
-    form.resetForm();
+    resetForm();
   } catch (err: any) {
     toast.error(err?.data?.message || err?.message || "Something went wrong");
-  } finally {
-    submitting.value = false;
   }
 };
+
+// handleSubmit validates first and only runs onSubmit when the form is valid.
+const onFormSubmit = handleSubmit(onSubmit);
 </script>
 
 <template>
@@ -166,12 +166,8 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
             </p>
           </div>
           <div v-motion="fadeUp(0.4)">
-            <Form
-              class="mt-6 w-full max-w-xl"
-              as="form"
-              @submit="form.handleSubmit(onSubmit)"
-            >
-              <div class="flex gap-2">
+            <form class="mt-6 w-full max-w-xl" @submit.prevent="onFormSubmit">
+              <div class="flex items-start gap-2">
                 <FormField
                   v-slot="{ value, handleChange, handleBlur }"
                   name="name"
@@ -181,6 +177,9 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
                     <FormControl>
                       <Input
                         :model-value="value"
+                        :disabled="isSubmitting"
+                        name="name"
+                        autocomplete="name"
                         placeholder="Name"
                         class="shadow bg-white h-10"
                         @update:model-value="handleChange"
@@ -200,6 +199,10 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
                       <Input
                         type="email"
                         :model-value="value"
+                        :disabled="isSubmitting"
+                        name="email"
+                        autocomplete="email"
+                        inputmode="email"
                         placeholder="Email"
                         class="shadow bg-white h-10"
                         @update:model-value="handleChange"
@@ -211,15 +214,17 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
                 </FormField>
                 <Button
                   type="submit"
-                  :disabled="submitting"
+                  :disabled="isSubmitting"
+                  :aria-busy="isSubmitting"
                   variant="dark"
                   size="md"
-                  class="shadow min-w-36"
+                  class="shadow min-w-36 gap-2"
                 >
-                  {{ submitting ? "Joining..." : "Join waitlist" }}
+                  <LoaderCircle v-if="isSubmitting" class="size-4 animate-spin" />
+                  {{ isSubmitting ? "Joining..." : "Join waitlist" }}
                 </Button>
               </div>
-            </Form>
+            </form>
           </div>
         </ClientOnly>
       </div>

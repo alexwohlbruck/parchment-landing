@@ -19,9 +19,11 @@ export default defineNuxtConfig({
     preset: "bun",
   },
   runtimeConfig: {
-    googleServiceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    googleServiceAccountKey: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
-    googleSheetsId: process.env.GOOGLE_SHEETS_ID,
+    // Google Apps Script web app that appends signups to the waitlist sheet.
+    // Override per-environment with WAITLIST_SCRIPT_URL if the deployment changes.
+    waitlistScriptUrl:
+      process.env.WAITLIST_SCRIPT_URL ||
+      "https://script.google.com/macros/s/AKfycbwBKEtllpubTQYU-cy_52rpie11r3M1xmAlGxn3xYjopsBhuGVjzLG6NTRrxoR-xYvHNA/exec",
     public: {
       abCookieName: "ab_variant",
     },

@@ -1,5 +1,3 @@
-import { google } from "googleapis";
-
 const memorySubmissions: Array<{
   name: string;
   email: string;
@@ -12,6 +10,26 @@ const memorySubmissions: Array<{
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const RATE_LIMIT_MAX = 5; // max submissions per IP per window
 const ipToTimestamps: Map<string, number[]> = new Map();
+
+// Backstop store used when the waitlist endpoint isn't configured or the
+// request to it fails, so a signup is never lost to an unhandled error.
+function recordInMemory(entry: {
+  name: string;
+  email: string;
+  variant: "A" | "B";
+  ip?: string;
+}) {
+  const already = memorySubmissions.some((s) => s.email === entry.email);
+  if (!already) {
+    memorySubmissions.push({ ...entry, ts: new Date().toISOString() });
+  }
+  return {
+    ok: true as const,
+    message: already
+      ? "You're already on the waitlist."
+      : "Thanks! You're on the waitlist.",
+  };
+}
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{
@@ -57,63 +75,39 @@ export default defineEventHandler(async (event) => {
   recent.push(now);
   ipToTimestamps.set(ipKey, recent);
 
-  const config = useRuntimeConfig();
-  const sheetsId = config.googleSheetsId as string | undefined;
-  const svcEmail = config.googleServiceAccountEmail as string | undefined;
-  const svcKey = (
-    config.googleServiceAccountKey as string | undefined
-  )?.replace(/\\n/g, "\n");
+  const scriptUrl = useRuntimeConfig().waitlistScriptUrl as string | undefined;
 
-  // Fallback to memory when config is missing
-  if (!sheetsId || !svcEmail || !svcKey) {
-    const already = memorySubmissions.some((s) => s.email === email);
-    if (already) {
-      return { ok: true, message: "You're already on the waitlist." };
+  // No endpoint configured (e.g. local dev) — use the in-memory backstop.
+  if (!scriptUrl) {
+    return recordInMemory({ name, email, variant, ip: ip || undefined });
+  }
+
+  // Forward to the Google Apps Script web app. It expects a JSON body and
+  // responds with { ok: boolean, duplicate?: boolean }. If the call fails for
+  // any reason, log it and fall back to memory rather than losing the signup.
+  try {
+    const result = await $fetch<{ ok?: boolean; duplicate?: boolean }>(
+      scriptUrl,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: { name, email, variant },
+      }
+    );
+    if (!result?.ok) {
+      throw new Error("Waitlist endpoint returned a non-ok response");
     }
-    memorySubmissions.push({
-      name,
-      email,
-      variant,
-      ts: new Date().toISOString(),
-      ip: ip || undefined,
-    });
-    return { ok: true, message: "Thanks! You're on the waitlist." };
+    return {
+      ok: true,
+      message: result.duplicate
+        ? "You're already on the waitlist."
+        : "Thanks! You're on the waitlist.",
+    };
+  } catch (err) {
+    console.error(
+      "[waitlist] Apps Script submission failed; falling back to in-memory store:",
+      err
+    );
+    return recordInMemory({ name, email, variant, ip: ip || undefined });
   }
-
-  // Google Sheets: auth
-  const jwt = new google.auth.JWT({
-    email: svcEmail,
-    key: svcKey,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-
-  const sheets = google.sheets({ version: "v4", auth: jwt });
-
-  // Check for existing email in first column (assuming header row present)
-  // Adjust range as needed, default to 'Sheet1'
-  const range = "Sheet1!A:B";
-  const getResp = await sheets.spreadsheets.values.get({
-    spreadsheetId: sheetsId,
-    range,
-  });
-  const rows = getResp.data.values || [];
-  const emailLower = email.toLowerCase();
-  const exists = rows.some(
-    (r) => (r[1] || "").toString().toLowerCase() === emailLower
-  );
-  if (exists) {
-    return { ok: true, message: "You're already on the waitlist." };
-  }
-
-  // Append row: [timestamp, email, name, variant, ip]
-  const values = [[new Date().toISOString(), email, name, variant, ip || ""]];
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: sheetsId,
-    range,
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: { values },
-  });
-
-  return { ok: true, message: "Thanks! You're on the waitlist." };
 });

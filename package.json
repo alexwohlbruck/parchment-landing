@@ -24,7 +24,6 @@
     "@vueuse/motion": "^2.2.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "googleapis": "^140.0.1",
     "lucide-vue-next": "^0.539.0",
     "mbgl-renderer": "^0.9.0",
     "nuxt": "^4.0.1",
