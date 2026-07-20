@@ -85,13 +85,15 @@ export default defineEventHandler(async (event) => {
   // Forward to the Google Apps Script web app. It expects a JSON body and
   // responds with { ok: boolean, duplicate?: boolean }. If the call fails for
   // any reason, log it and fall back to memory rather than losing the signup.
+  // We send an explicit `timestamp` so the recorded time doesn't depend on the
+  // Apps Script generating its own.
   try {
     const result = await $fetch<{ ok?: boolean; duplicate?: boolean }>(
       scriptUrl,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: { name, email, variant },
+        body: { name, email, variant, timestamp: new Date().toISOString() },
       }
     );
     if (!result?.ok) {
