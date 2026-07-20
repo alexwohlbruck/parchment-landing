@@ -24,3 +24,5 @@ logs
 !.env.example
 
 .globe-data
+# Local Netlify folder
+.netlify

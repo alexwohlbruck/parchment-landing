@@ -5,11 +5,28 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   css: ["~/assets/css/tailwind.css"],
+  components: [
+    {
+      path: "~/components",
+      extensions: ["vue"],
+      pathPrefix: false,
+    },
+  ],
   vite: {
     plugins: [tailwindcss()],
   },
   nitro: {
     preset: "bun",
+  },
+  runtimeConfig: {
+    // Google Apps Script web app that appends signups to the waitlist sheet.
+    // Override per-environment with WAITLIST_SCRIPT_URL if the deployment changes.
+    waitlistScriptUrl:
+      process.env.WAITLIST_SCRIPT_URL ||
+      "https://script.google.com/macros/s/AKfycbwBKEtllpubTQYU-cy_52rpie11r3M1xmAlGxn3xYjopsBhuGVjzLG6NTRrxoR-xYvHNA/exec",
+    public: {
+      abCookieName: "ab_variant",
+    },
   },
   app: {
     head: {
@@ -19,7 +36,7 @@ export default defineNuxtConfig({
         {
           name: "description",
           content:
-            "opacity-80 A modern mapping and navigation app based on open data and open source software.",
+            "A modern mapping and navigation app based on open data and open source software.",
         },
       ],
       link: [
@@ -31,12 +48,24 @@ export default defineNuxtConfig({
         },
         {
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap",
+          href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap",
         },
         {
           rel: "icon",
           type: "image/svg+xml",
           href: "/favicon.svg",
+        },
+        // Warm the globe textures early — they're otherwise only requested
+        // after the JS bundle hydrates and Three.js initializes.
+        {
+          rel: "preload",
+          as: "image",
+          href: "/textures/earth_albedo.webp",
+        },
+        {
+          rel: "preload",
+          as: "image",
+          href: "/textures/clouds.webp",
         },
       ],
     },
