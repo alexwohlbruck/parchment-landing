@@ -16,7 +16,9 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   nitro: {
-    preset: "bun",
+    // parchment.app deploys to Netlify, which serves SSR via functions — the
+    // "bun" preset builds a standalone Bun server Netlify can't run (→ 404).
+    preset: "netlify",
   },
   runtimeConfig: {
     // Google Apps Script web app that appends signups to the waitlist sheet.
