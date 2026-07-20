@@ -147,8 +147,8 @@ const onFormSubmit = handleSubmit(onSubmit);
         <ClientOnly>
           <div v-motion="fadeUp(0.1)">
             <h1
-              class="text-center font-serif text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
-              style="font-variation-settings: 'wght' 700"
+              class="text-center font-title text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
+              style="font-variation-settings: 'EXPO' -12"
             >
               The
               <span

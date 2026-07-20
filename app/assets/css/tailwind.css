@@ -3,6 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Exposure — variable display face for the hero title (EXPO axis: -100..100) */
+@font-face {
+  font-family: "Exposure";
+  src: url("/fonts/Exposure.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -50,7 +59,7 @@
   --color-shadow: var(--shadow);
 
   /* Fonts */
-  --font-serif: "DM Serif Display", serif;
+  --font-title: "Exposure", ui-serif, Georgia, serif;
   --font-sans: "Inter", system-ui, sans-serif;
 }
 
