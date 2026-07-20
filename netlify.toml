@@ -1,0 +1,15 @@
+# Nuxt (Nitro) SSR on Netlify.
+#
+# The site must be built with `nuxt build` (SSR) — NOT `nuxt generate` (static).
+# `nuxt generate` produces a static export (index.html + 200.html/404.html SPA
+# fallback) with no server function, which makes every /api/* route 404 and
+# breaks the waitlist. `nuxt build` + the `netlify` Nitro preset (see
+# nuxt.config.ts) emits a server function to .netlify/functions-internal that
+# Netlify picks up automatically, handling SSR pages and /api routes.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Belt-and-suspenders: make sure nothing forces a static preset.
+  NITRO_PRESET = "netlify"
