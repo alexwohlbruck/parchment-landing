@@ -11,6 +11,7 @@
     "postinstall": "nuxt prepare",
     "start": "nuxt dev",
     "lint": "eslint .",
+    "test": "vitest run",
     "typecheck": "nuxt typecheck",
     "build:globe": "SIZE_W=2048 SIZE_H=1024 ./scripts/build-globe-textures.sh && BRIGHT=1.18 SAT=1.28 POSTERIZE=6 node ./scripts/postprocess-globe.js",
     "build:globe:4k": "SIZE_W=4096 SIZE_H=2048 ./scripts/build-globe-textures.sh && BRIGHT=1.12 SAT=1.18 POSTERIZE=4 node ./scripts/postprocess-globe.js",
@@ -41,6 +42,10 @@
   },
   "devDependencies": {
     "@types/three": "^0.179.0",
-    "pngjs": "^7.0.0"
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^20.11.1",
+    "pngjs": "^7.0.0",
+    "vitest": "^4.1.10"
   }
 }

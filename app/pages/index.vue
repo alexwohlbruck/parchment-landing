@@ -7,6 +7,7 @@ import { toast } from "vue-sonner";
 import { LoaderCircle } from "lucide-vue-next";
 import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
+import { APP_URL } from "@/lib/links";
 import Input from "@/components/ui/input/Input.vue";
 import HeroGlobe from "@/components/HeroGlobe.client.vue";
 import {
@@ -133,7 +134,7 @@ const onFormSubmit = handleSubmit(onSubmit);
           </li>
 
           <template #cta>
-            <Button href="https://parchment.app" variant="ghost" size="sm">
+            <Button :href="APP_URL" variant="ghost" size="sm">
               Launch app →
             </Button>
           </template>
