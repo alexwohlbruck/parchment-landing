@@ -12,10 +12,7 @@
 </script>
 
 <template>
-  <nav
-    class="depth-floating fixed left-1/2 top-4 z-20 w-[95%] max-w-5xl -translate-x-1/2 rounded-full border border-white/60 bg-white/40 px-4 py-2 text-sm text-base-dark backdrop-blur-xl md:w-[88%] lg:w-[80%]"
-    aria-label="Primary"
-  >
+  <nav class="nav-pill" aria-label="Primary">
     <div class="flex items-center justify-between gap-6">
       <slot name="brand" />
       <ul class="hidden gap-6 md:flex">
