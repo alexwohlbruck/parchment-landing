@@ -58,9 +58,28 @@
   --color-parchment: var(--parchment);
   --color-shadow: var(--shadow);
 
+  /* Structural tones shared with barrelman-landing — aged paper for panels,
+     two rule weights, and a mid ink for secondary copy. The two sites draw
+     from one vocabulary so a component can move between them unchanged. */
+  --color-paper-aged: var(--paper-aged);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+
   /* Fonts */
   --font-title: "Exposure", ui-serif, Georgia, serif;
   --font-sans: "Inter", system-ui, sans-serif;
+
+  /**
+   * Type scale, shared with barrelman-landing. Five steps and nothing
+   * off-scale, so the two sites set copy at the same sizes.
+   */
+  --text-micro: 0.6875rem; /* 11px — legend caps and badges */
+  --text-fine: 0.75rem; /* 12px — code and mono data */
+  --text-caption: 0.8125rem; /* 13px — asides under tables and CTAs */
+  --text-body: 0.875rem; /* 14px — card and list copy */
+  --text-lead: 1.0625rem; /* 17px — section ledes */
 }
 
 :root {
@@ -105,6 +124,17 @@
   --space: #081628;
   --parchment: #fff9f3;
   --shadow: rgba(63, 47, 30, 0.25);
+
+  /**
+   * Shared with barrelman-landing, value for value. barrelman names the same
+   * colours --paper / --ink / --ink-faint; these are the Parchment names for
+   * them, plus the intermediate tones both sites need for panels and rules.
+   */
+  --paper-aged: #f8efe2;
+  --paper-deep: #eddfc9;
+  --ink-soft: #7b674f;
+  --rule: #ded0ba;
+  --rule-strong: #c2ae91;
 }
 
 .dark {
@@ -142,6 +172,64 @@
   --sidebar-ring: oklch(0.446 0.043 257.281);
 }
 
+/**
+ * The depth scale, ported verbatim from parchment/web/src/style.css.
+ *
+ * The house lighting model: one light source above the page, so every raised
+ * surface catches a hairline highlight along its top edge and drops a soft
+ * shadow beneath it. The four steps are how far off the page a surface sits —
+ * a resting control, a filled control, something floating over the content,
+ * something overlaying it.
+ *
+ * Kept byte-identical to the app's values rather than re-tuned by eye, so the
+ * marketing site and the product light their surfaces the same way.
+ */
+@utility depth {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+
+  &:is(.dark *) {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@utility depth-raised {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+@utility depth-floating {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+
+  &:is(.dark *) {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@utility depth-overlay {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  &:is(.dark *) {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -155,6 +243,21 @@
     @apply font-sans;
     background: var(--parchment);
     color: var(--base-dark);
+  }
+}
+
+@layer components {
+  /**
+   * Layout rhythm, shared with barrelman-landing. One vertical measure and one
+   * container for every band, so sections on either site sit on the same grid
+   * and content lines up down the whole page.
+   */
+  .band {
+    @apply relative py-20 sm:py-28;
+  }
+
+  .measure {
+    @apply mx-auto w-full max-w-5xl px-6;
   }
 }
 
