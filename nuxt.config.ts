@@ -42,6 +42,11 @@ export default defineNuxtConfig({
         },
       ],
       link: [
+        // Geist from the Google Fonts CDN, the same request barrelman-landing
+        // makes, so the body copy on the two sites is one face served from one
+        // place. The preconnects are what make it worth using a CDN at all:
+        // without them the stylesheet and the woff2 behind it are two cold
+        // connections on the critical path.
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
@@ -50,7 +55,16 @@ export default defineNuxtConfig({
         },
         {
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap",
+          href: "https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap",
+        },
+        {
+          // Without this the hero title reflows once Exposure arrives, because
+          // the @font-face is only discovered after the CSS parses.
+          rel: "preload",
+          as: "font",
+          type: "font/woff2",
+          href: "/fonts/Exposure.woff2",
+          crossorigin: "anonymous",
         },
         {
           rel: "icon",
@@ -58,16 +72,24 @@ export default defineNuxtConfig({
           href: "/favicon.svg",
         },
         // Warm the globe textures early — they're otherwise only requested
-        // after the JS bundle hydrates and Three.js initializes.
+        // after the JS bundle hydrates and three initializes.
+        //
+        // `crossorigin` because three's ImageLoader sets `crossOrigin =
+        // 'anonymous'`: without it the preload key does not match the image
+        // request and the browser downloads both textures a second time.
         {
           rel: "preload",
           as: "image",
+          type: "image/webp",
           href: "/textures/earth_albedo.webp",
+          crossorigin: "",
         },
         {
           rel: "preload",
           as: "image",
+          type: "image/webp",
           href: "/textures/clouds.webp",
+          crossorigin: "",
         },
       ],
     },

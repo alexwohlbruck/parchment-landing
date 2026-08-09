@@ -12,20 +12,27 @@ import { cn } from "@/lib/utils";
  * pressed — outer shadow removed, an inner shadow cast down from the top edge,
  * and the whole thing nudged a pixel down.
  *
- * Filled variants take the 0.1/0.2 highlight because white at 0.7 over a dark
- * fill reads as a scratch; light ones take 0.7 or it disappears into paper.
- * These match parchment/web/src/components/ui/button/index.ts.
+ * The shadow stacks that say all of that now come from @parchment/design's
+ * `.btn-base` / `.btn-filled` / `.btn-outlined`, so a variant here declares
+ * only its colours. They were previously written out per variant as arbitrary
+ * `shadow-[...]` values — four copies of the same three numbers, in one of the
+ * two places the two sites had to agree and could not be made to.
+ *
+ * The size prop stays local. Barrelman sets one button size through the class
+ * itself; this site has a form row where the control has to match a 40px
+ * field, so height and padding are set here and the class's own `px-5 py-2.5`
+ * is overridden by it.
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+  "btn-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary:
-          "border border-white/15 bg-brand text-parchment depth-raised hover:bg-brand/90 hover:shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:inset-shadow-[0_1px_0_rgba(255,255,255,0.2)] active:bg-brand/80 active:shadow-none active:inset-shadow-[0_2px_4px_rgba(0,0,0,0.2)] active:translate-y-px",
-        dark: "border border-white/15 bg-base-dark text-parchment depth-raised hover:bg-base-dark/90 hover:shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:inset-shadow-[0_1px_0_rgba(255,255,255,0.2)] active:bg-base-dark/80 active:shadow-none active:inset-shadow-[0_2px_4px_rgba(0,0,0,0.2)] active:translate-y-px",
-        outline:
-          "border border-base-dark/40 bg-parchment text-base-dark depth hover:bg-base-dark/5 hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)] active:bg-base-dark/10 active:shadow-none active:inset-shadow-[0_2px_4px_rgba(0,0,0,0.06)] active:translate-y-px",
+        primary: "btn-filled bg-brand text-parchment hover:bg-brand/90 active:bg-brand/80",
+        dark: "btn-filled bg-base-dark text-parchment hover:bg-base-dark/90 active:bg-base-dark/80",
+        outline: "btn-outlined text-base-dark",
+        // No surface of its own, so it has no lighting to inherit — a ghost
+        // button is a hit area, and all it owes the model is the press.
         ghost:
           "text-base-dark hover:bg-base-dark/15 active:bg-base-dark/20 active:translate-y-px",
       },

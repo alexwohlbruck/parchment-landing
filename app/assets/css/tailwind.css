@@ -14,6 +14,14 @@
   font-display: swap;
 }
 
+/**
+ * Only what this site owns lives below.
+ *
+ * The palette, the type scale, the radii, the faces and the layout primitives
+ * all come from @parchment/design and are deliberately not restated here — a
+ * second copy of a brand value is how the two sites drifted apart in the first
+ * place. Anything that has to change for both belongs in that package.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -39,10 +47,6 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -52,36 +56,20 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Custom brand/theme tokens migrated from Tailwind v3 config */
-  --color-brand: var(--brand);
-  --color-base-dark: var(--base-dark);
-  --color-base-light: var(--base-light);
-  --color-space: var(--space);
-  --color-parchment: var(--parchment);
-  --color-shadow: var(--shadow);
-
-  /* Structural tones shared with barrelman-landing — aged paper for panels,
-     two rule weights, and a mid ink for secondary copy. The two sites draw
-     from one vocabulary so a component can move between them unchanged. */
-  --color-paper-aged: var(--paper-aged);
-  --color-paper-deep: var(--paper-deep);
-  --color-ink-soft: var(--ink-soft);
-  --color-rule: var(--rule);
-  --color-rule-strong: var(--rule-strong);
-
-  /* Fonts */
-  --font-title: "Exposure", ui-serif, Georgia, serif;
-  --font-sans: "Inter", system-ui, sans-serif;
-
   /**
-   * Type scale, shared with barrelman-landing. Five steps and nothing
-   * off-scale, so the two sites set copy at the same sizes.
+   * Geist, under the name the CDN gives it.
+   *
+   * Google Fonts registers the family as "Geist"; @parchment/design's stack
+   * leads with "Geist Sans", which is what a self-hosted @fontsource build
+   * calls it. Both names are listed so the token resolves either way — the
+   * fallbacks after them are the package's, unchanged.
+   *
+   * barrelman-landing sets the same line. --font-mono needs no help: the CDN
+   * and @fontsource agree on "Geist Mono".
    */
-  --text-micro: 0.6875rem; /* 11px — legend caps and badges */
-  --text-fine: 0.75rem; /* 12px — code and mono data */
-  --text-caption: 0.8125rem; /* 13px — asides under tables and CTAs */
-  --text-body: 0.875rem; /* 14px — card and list copy */
-  --text-lead: 1.0625rem; /* 17px — section ledes */
+  --font-sans:
+    "Geist", "Geist Sans", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
+    sans-serif;
 }
 
 :root {
@@ -109,7 +97,6 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
   --sidebar: oklch(0.984 0.003 247.858);
   --sidebar-foreground: oklch(0.129 0.042 264.695);
   --sidebar-primary: oklch(0.208 0.042 265.755);
@@ -119,9 +106,10 @@
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
 
-  /* --brand, --base-dark, --base-light, --space, --parchment, --shadow and the
-     paper/rule tones all come from @parchment/design. They are not restated
-     here so there is one place a brand value is written down. */
+  /* --brand, --base-dark, --base-light, --space, --parchment, --shadow, the
+     paper/rule tones, the radius scale and the type scale all come from
+     @parchment/design. They are not restated here so there is one place a
+     brand value is written down. */
 }
 
 .dark {
@@ -175,24 +163,24 @@
   }
 }
 
-@layer utilities {
-  /* Ensure custom color utilities exist regardless of token resolution */
-  .text-brand {
-    color: var(--brand);
-  }
-  .text-base-dark {
-    color: var(--base-dark);
-  }
-  .text-base-light {
-    color: var(--base-light);
-  }
-  .text-parchment {
-    color: var(--parchment);
-  }
-  .bg-space {
-    background-color: var(--space);
-  }
-  .bg-parchment {
-    background-color: var(--parchment);
+@layer components {
+  /**
+   * Titling — the same declarations barrelman-landing sets, so a heading is
+   * the same face on the same axis at the same weight on both sites.
+   *
+   * Still a copy in each stylesheet rather than a shared primitive, because
+   * Exposure is self-hosted per origin and the class is meaningless without
+   * the @font-face beside it. If a third consumer appears it should move into
+   * @parchment/design with the font declared there.
+   *
+   * A page that wants tighter leading than 1.02 sets it at the call site,
+   * which is what the hero does — the class is not the place to encode one
+   * heading's line count.
+   */
+  .display {
+    font-family: var(--font-title);
+    font-variation-settings: "EXPO" -12;
+    font-weight: 400;
+    line-height: 1.02;
   }
 }

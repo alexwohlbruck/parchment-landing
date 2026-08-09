@@ -81,9 +81,12 @@ const onFormSubmit = handleSubmit(onSubmit);
 
 <template>
   <main class="snap-y snap-mandatory overflow-y-auto h-[100dvh]">
+    <!-- The ground under the masked map: the deepest of the three paper tones,
+         so the one colour showing through a translucent photograph is a token
+         and not a hex nobody can find again. -->
     <section
       id="hero"
-      class="relative min-h-[100dvh] overflow-hidden bg-[#E3D9CF] snap-start"
+      class="relative min-h-[100dvh] snap-start overflow-hidden bg-paper-deep"
     >
       <!-- Parchment map background -->
       <div class="absolute inset-0 z-0">
@@ -100,9 +103,9 @@ const onFormSubmit = handleSubmit(onSubmit);
       <div class="relative z-30">
         <UiNavbar>
           <template #brand>
-            <a href="/" class="flex items-center gap-2 text-base-dark">
+            <a href="/" class="flex shrink-0 items-center gap-2 text-base-dark">
               <svg
-                class="size-7"
+                class="size-[1.375rem]"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 1024 1024"
                 fill="currentColor"
@@ -119,15 +122,18 @@ const onFormSubmit = handleSubmit(onSubmit);
                   d="M351.1,86.8c9.1,23.1,28.6,93.2-30.5,170.9-2,2.7-.3,6.5,3,6.8,45,3.7,273.3,27,462,127.3,2.3,1.2,5.1.1,6-2.3,7.7-21.1,35.8-111.6-11.2-193.9-.6-1-1.5-1.7-2.6-2l-421.6-112.5c-3.4-.9-6.4,2.4-5.1,5.7Z"
                 />
               </svg>
-              <span class="font-medium">Parchment</span>
+              <!-- The lockup, matched to barrelman's down to the metrics: the
+                   display face at 18px with its baked-in leading dropped,
+                   against a 1.375rem mark. It was set in the body sans at the
+                   pill's inherited 14px, which made the wordmark half the
+                   height of the mark beside it and the only place on either
+                   site where the brand is not spelled in Exposure. -->
+              <span class="display text-lg leading-none">Parchment</span>
             </a>
           </template>
 
           <li v-for="link in links" :key="link.label">
-            <a
-              :href="link.href"
-              class="cursor-pointer text-base-dark/70 hover:text-base-dark rounded"
-            >
+            <a :href="link.href" class="cursor-pointer transition-colors hover:text-base-dark">
               {{ link.label }}
             </a>
           </li>
@@ -140,15 +146,19 @@ const onFormSubmit = handleSubmit(onSubmit);
         </UiNavbar>
       </div>
 
-      <!-- Hero content -->
+      <!-- Hero content. `.measure` is the shared column — same max width and
+           same gutter as every band on barrelman-landing, so the two sites
+           set copy against the same left edge. -->
       <div
-        class="relative z-10 mx-auto flex w-[min(1100px,92%)] max-w-5xl h-[65dvh] flex-col items-center justify-center will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
+        class="measure relative z-10 flex h-[65dvh] flex-col items-center justify-center will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
       >
         <ClientOnly>
           <div v-motion="fadeUp(0.1)">
+            <!-- `.display` carries the face and the axis; only the leading is
+                 set here, because this is a three-line stack of very large
+                 type and the class's 1.02 opens a gap between the lines. -->
             <h1
-              class="text-center font-title text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
-              style="font-variation-settings: 'EXPO' -12"
+              class="display max-w-4xl text-balance text-center text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
             >
               The
               <span
@@ -160,14 +170,18 @@ const onFormSubmit = handleSubmit(onSubmit);
             </h1>
           </div>
           <div v-motion="fadeUp(0.25)">
-            <p class="mt-4 max-w-2xl text-center text-[1.1rem] text-base-dark/80">
+            <p class="mt-7 max-w-2xl text-center text-lead leading-relaxed text-ink-soft">
               Explore the world with beautiful, detailed maps crafted by the
               community.
             </p>
           </div>
           <div v-motion="fadeUp(0.4)">
-            <form class="mt-6 w-full max-w-xl" @submit.prevent="onFormSubmit">
-              <div class="flex items-start gap-2">
+            <form class="mt-9 w-full max-w-xl" @submit.prevent="onFormSubmit">
+              <!-- Stacked below sm. Three controls in a 375px row left the two
+                   fields about 100px wide each, which is narrower than the
+                   words in them; barrelman's hero takes the same escape with
+                   `max-sm:w-full` on its pair of CTAs. -->
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
                 <FormField
                   v-slot="{ value, handleChange, handleBlur }"
                   name="name"
@@ -181,7 +195,7 @@ const onFormSubmit = handleSubmit(onSubmit);
                         name="name"
                         autocomplete="name"
                         placeholder="Name"
-                        class="shadow bg-white h-10"
+                        class="h-10 bg-parchment"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
@@ -204,7 +218,7 @@ const onFormSubmit = handleSubmit(onSubmit);
                         autocomplete="email"
                         inputmode="email"
                         placeholder="Email"
-                        class="shadow bg-white h-10"
+                        class="h-10 bg-parchment"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
@@ -218,7 +232,7 @@ const onFormSubmit = handleSubmit(onSubmit);
                   :aria-busy="isSubmitting"
                   variant="dark"
                   size="md"
-                  class="shadow min-w-36 gap-2"
+                  class="w-full sm:w-auto sm:min-w-36"
                 >
                   <LoaderCircle v-if="isSubmitting" class="size-4 animate-spin" />
                   {{ isSubmitting ? "Joining..." : "Join waitlist" }}
@@ -229,11 +243,32 @@ const onFormSubmit = handleSubmit(onSubmit);
         </ClientOnly>
       </div>
 
-      <!-- Globe -->
+      <!--
+        The globe.
+
+        Two numbers, and both are the projection rather than values found by
+        nudging. <HeroGlobe> now sees 48.5° instead of 45° — the atmosphere
+        does not fit a 45° frame, and what the top edge of this box used to cut
+        was a live 8% of the glow, drawn as a horizontal rule across the map.
+
+        Through 48.5° the r=1.06 sphere covers tan(asin(1.06/3.1)) / tan(24.25°)
+        = 0.808 of the frame, against 0.878 through 45°. So the canvas grows by
+        that ratio — 150vw becomes 163vw — and the planet on screen is exactly
+        the size it was, with air around it instead of a cut.
+
+        The lift is the difference between where the limb sits in the old frame
+        and the new one: 0.0961 of the canvas above the limb now against 0.0608
+        before, which against a 163vw box is 0.0402 of it. Without the lift the
+        wider canvas would push the horizon down the page.
+
+        `pointer-events-none` because the canvas is wider than the viewport and
+        its top overlaps the bottom of the form: taking the pointer here would
+        swallow clicks on the submit button.
+      -->
       <div
-        class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 w-[150vw] z-20 transition-opacity duration-1000 ease-out"
+        class="pointer-events-none absolute left-1/2 z-20 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
         :class="globeReady ? 'opacity-100' : 'opacity-0'"
-        style="aspect-ratio: 1/1"
+        style="--globe: 163vw; top: calc(50% - var(--globe) * 0.0402)"
       >
         <HeroGlobe @ready="globeReady = true" />
       </div>
