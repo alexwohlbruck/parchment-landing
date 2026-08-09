@@ -9,6 +9,8 @@ import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
 import HeroGlobe from "@/components/HeroGlobe.client.vue";
+import ReleasePill from "@/components/ReleasePill.vue";
+import type { LatestRelease } from "~~/server/api/release.get";
 import {
   FormField,
   FormItem,
@@ -24,13 +26,44 @@ const fadeUp = (delay: number) =>
     enter: { opacity: 1, y: 0, transition: { duration: 0.7, delay } },
   }) as const;
 
-// Placeholder nav — no destination pages exist yet
+const { public: config } = useRuntimeConfig();
+
+/**
+ * The latest release, for the pill above the headline.
+ *
+ * Fetched here rather than inside <ReleasePill>, because the pill renders
+ * under <ClientOnly> and a fetch in there would run once per visitor. The
+ * endpoint is a cached same-origin proxy, so on the server this resolves out
+ * of memory and the value travels down in the payload.
+ */
+const { data: release } = await useFetch<LatestRelease | null>(
+  "/api/release",
+  // The pill is an ornament: if GitHub is unreachable the hero renders with
+  // one fewer element rather than erroring.
+  { default: () => null }
+);
+
+/**
+ * The nav, cut down to the links that have somewhere to go.
+ *
+ * All five of these used to be `href="#"`. A nav of dead links is worse than a
+ * short one: it advertises a blog, a resources section and a pricing page that
+ * do not exist, and the first thing a visitor learns about the product is that
+ * its own header does not work.
+ *
+ * Blog, Resources and Pricing are commented out rather than deleted — they are
+ * planned, and this is the list to add them back to.
+ *
+ * "Developers" is now "Docs", which is what it is. The old label named an
+ * audience and left you guessing what was behind it.
+ */
 const links = [
-  { href: "#", label: "Download" },
-  { href: "#", label: "Developers" },
-  { href: "#", label: "Blog" },
-  { href: "#", label: "Resources" },
-  { href: "#", label: "Pricing" },
+  { href: config.releasesUrl, label: "Download", external: true },
+  { href: config.docsUrl, label: "Docs", external: true },
+  // { href: "#", label: "Blog" },
+  // { href: "#", label: "Resources" },
+  // { href: "#", label: "Pricing" },
+  { href: config.barrelmanUrl, label: "Barrelman", external: true },
 ];
 
 const WaitlistSchema = z.object({
@@ -101,7 +134,7 @@ const onFormSubmit = handleSubmit(onSubmit);
 
       <!-- Nav bar -->
       <div class="relative z-30">
-        <UiNavbar>
+        <UiNavbar :links="links">
           <template #brand>
             <a href="/" class="flex shrink-0 items-center gap-2 text-base-dark">
               <svg
@@ -132,14 +165,12 @@ const onFormSubmit = handleSubmit(onSubmit);
             </a>
           </template>
 
-          <li v-for="link in links" :key="link.label">
-            <a :href="link.href" class="cursor-pointer transition-colors hover:text-base-dark">
-              {{ link.label }}
-            </a>
-          </li>
-
+          <!-- The CTA is the filled pill barrelman's "Get a key" is, at the
+               same padding, so the two headers are the same height. It was a
+               ghost button, which is 2px shorter and made the whole bar 2px
+               shorter with it. -->
           <template #cta>
-            <Button href="https://parchment.app" variant="ghost" size="sm">
+            <Button :href="config.appUrl" variant="dark" size="pill">
               Launch app →
             </Button>
           </template>
@@ -149,22 +180,48 @@ const onFormSubmit = handleSubmit(onSubmit);
       <!-- Hero content. `.measure` is the shared column — same max width and
            same gutter as every band on barrelman-landing, so the two sites
            set copy against the same left edge. -->
+      <!--
+        `pt-20` is the nav's clearance. The column centres its content in the
+        first 65dvh, and the pill added a row to the top of that stack, which
+        moved the whole thing up until it sat 5px under the floating nav. The
+        padding is on the column rather than the section because the globe is
+        positioned against the section and must not move with the type.
+
+        `min-h` rather than `h`, so a phone — where the form is stacked and the
+        column is tallest — grows the box instead of spilling its content out
+        of both ends of a fixed one.
+      -->
       <div
-        class="measure relative z-10 flex h-[65dvh] flex-col items-center justify-center will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
+        class="measure relative z-10 flex min-h-[65dvh] flex-col items-center justify-center pt-20 will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
       >
         <ClientOnly>
+          <!-- What shipped most recently, above the headline, on the same
+               pattern as barrelman's hero. It leads the stagger because it is
+               the first line of the page: a visitor who already knows what
+               Parchment is wants the news, not the pitch. -->
+          <div v-motion="fadeUp(0)" class="mb-7 flex w-full justify-center">
+            <ReleasePill :release="release" />
+          </div>
           <div v-motion="fadeUp(0.1)">
-            <!-- `.display` carries the face and the axis; only the leading is
-                 set here, because this is a three-line stack of very large
-                 type and the class's 1.02 opens a gap between the lines. -->
+            <!--
+              The same heading barrelman sets: the same ramp, and `.display`'s
+              own 1.02 leading rather than an override.
+
+              It was clamp(2rem, 6vw, 4.6rem) at leading-[0.9] — 73.6px against
+              barrelman's 62.4px, set 12% tighter. Same face, same axis, same
+              400 weight, and it still read as a heavier typeface, because at
+              that size and that leading it is a denser block of ink. Nothing
+              about the font was ever different; the two numbers around it
+              were.
+            -->
             <h1
-              class="display max-w-4xl text-balance text-center text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
+              class="display max-w-4xl text-balance text-center text-[clamp(2.2rem,5.2vw,3.9rem)] text-base-dark"
             >
               The
-              <span
-                class="relative text-brand [text-shadow:2px_2px_0_rgba(63,47,30,0.16)]"
-                >next generation</span
-              >
+              <!-- No drop shadow. barrelman's blue is flat, and an offset
+                   brown behind this one thickened every stem — which is most
+                   of what read as a weight difference between the sites. -->
+              <span class="text-brand">next generation</span>
               of<br />
               digital maps
             </h1>
@@ -246,31 +303,49 @@ const onFormSubmit = handleSubmit(onSubmit);
       <!--
         The globe.
 
-        Two numbers, and both are the projection rather than values found by
-        nudging. <HeroGlobe> now sees 48.5° instead of 45° — the atmosphere
-        does not fit a 45° frame, and what the top edge of this box used to cut
-        was a live 8% of the glow, drawn as a horizontal rule across the map.
+        Anchored to the bottom of the content column above it, not to the
+        middle of the section.
 
-        Through 48.5° the r=1.06 sphere covers tan(asin(1.06/3.1)) / tan(24.25°)
-        = 0.808 of the frame, against 0.878 through 45°. So the canvas grows by
-        that ratio — 150vw becomes 163vw — and the planet on screen is exactly
-        the size it was, with air around it instead of a cut.
+        A viewport fraction was right for one viewport. The copy above it is a
+        short block on a desktop and three or four times taller on a phone —
+        the headline wraps to three lines, the form becomes three stacked rows
+        — while the horizon stayed at a fixed fraction of the section, so the
+        limb came up through the email field. Measured at 375x812 the overlap
+        was 78px; the breakpoint that fixed it left 0px of clearance at exactly
+        640 and 7px at 768, which is the shape of a number being nudged rather
+        than derived.
 
-        The lift is the difference between where the limb sits in the old frame
-        and the new one: 0.0961 of the canvas above the limb now against 0.0608
-        before, which against a 163vw box is 0.0402 of it. Without the lift the
-        wider canvas would push the horizon down the page.
+        The wrapper is an empty relative box in flow, so its `top: 0` *is* the
+        column's bottom edge, whatever the column turned out to be. The canvas
+        is then pulled up by exactly the distance from its own top to the limb
+        — 0.0961 of it, see below — which puts the horizon 2rem under the
+        column at every width, with no breakpoints in it at all.
+
+        The two constants:
+
+        <HeroGlobe> sees 48.5° rather than 45°, because the atmosphere does not
+        fit a 45° frame — the top edge of this box used to cut a live 8% of the
+        glow and draw it as a horizontal rule across the map. Through 48.5° the
+        r=1.06 sphere covers tan(asin(1.06/3.1)) / tan(24.25°) = 0.808 of the
+        frame, against 0.878 through 45°, so the canvas grows by that ratio —
+        150vw became 163vw — and the planet on screen is the size it always
+        was, with air around it instead of a cut.
+
+        That leaves (1 - 0.808) / 2 = 0.0961 of the canvas above the limb,
+        which is the offset the wrapper applies.
 
         `pointer-events-none` because the canvas is wider than the viewport and
-        its top overlaps the bottom of the form: taking the pointer here would
-        swallow clicks on the submit button.
+        overlaps the section below it: taking the pointer here would swallow
+        clicks on whatever lands there.
       -->
-      <div
-        class="pointer-events-none absolute left-1/2 z-20 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
-        :class="globeReady ? 'opacity-100' : 'opacity-0'"
-        style="--globe: 163vw; top: calc(50% - var(--globe) * 0.0402)"
-      >
-        <HeroGlobe @ready="globeReady = true" />
+      <div class="relative z-20">
+        <div
+          class="pointer-events-none absolute left-1/2 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
+          :class="globeReady ? 'opacity-100' : 'opacity-0'"
+          style="--globe: 163vw; top: calc(2rem - var(--globe) * 0.0961)"
+        >
+          <HeroGlobe @ready="globeReady = true" />
+        </div>
       </div>
     </section>
   </main>

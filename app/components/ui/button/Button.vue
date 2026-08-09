@@ -40,6 +40,14 @@ const buttonVariants = cva(
         sm: "h-8 px-3",
         md: "h-10 px-4",
         lg: "h-12 px-6",
+        /**
+         * The nav's CTA, set by padding rather than by height so it comes out
+         * at exactly the 34px barrelman's does — 20px of line box, 6px either
+         * side, 1px of border. Given as a height it would be 34px of box with
+         * different type metrics inside it, which is a different object that
+         * happens to measure the same.
+         */
+        pill: "rounded-full px-4 py-1.5",
       },
     },
     defaultVariants: {

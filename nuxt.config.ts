@@ -28,6 +28,16 @@ export default defineNuxtConfig({
       "https://script.google.com/macros/s/AKfycbwBKEtllpubTQYU-cy_52rpie11r3M1xmAlGxn3xYjopsBhuGVjzLG6NTRrxoR-xYvHNA/exec",
     public: {
       abCookieName: "ab_variant",
+      // Where the nav points. Split out on barrelman-landing's pattern so a
+      // staging deploy can retarget them without a code change, and so the
+      // one place a sibling property's address is written down is here.
+      appUrl: process.env.PARCHMENT_APP_URL || "https://parchment.app",
+      docsUrl: process.env.PARCHMENT_DOCS_URL || "https://docs.parchment.app",
+      githubUrl: "https://github.com/alexwohlbruck/parchment",
+      releasesUrl: "https://github.com/alexwohlbruck/parchment/releases",
+      // The sibling site. Parchment is the map; Barrelman is the API the map
+      // is drawn from, and each links to the other.
+      barrelmanUrl: process.env.BARRELMAN_URL || "https://barrelman.dev",
     },
   },
   app: {

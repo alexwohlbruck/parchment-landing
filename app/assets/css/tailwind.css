@@ -183,4 +183,120 @@
     font-weight: 400;
     line-height: 1.02;
   }
+
+
+  /**
+   * The unresolvable background haze, under the individual stars <StarField>
+   * renders on top. Hand-placed in three tiers of density, because a repeating
+   * pattern reads as a texture rather than a sky.
+   *
+   * Nothing here twinkles. A gradient stack can only be animated as one thing,
+   * so every star in it brightens on the same clock, and at any amplitude worth
+   * seeing that reads as the whole panel pulsing. The sparkle belongs to the
+   * elements, which can each hold their own phase; these layers only drift, far
+   * and near in opposite directions, to give the field depth.
+   *
+   * Lifted from barrelman-landing unchanged — it is the same sky, and the two
+   * would be obvious as different skies if either were re-rolled.
+   */
+  .starfield {
+    background-image:
+      radial-gradient(1.4px 1.4px at 12% 22%, rgba(255, 249, 243, 0.55), transparent),
+      radial-gradient(1px 1px at 26% 68%, rgba(255, 249, 243, 0.4), transparent),
+      radial-gradient(1.6px 1.6px at 41% 14%, rgba(255, 249, 243, 0.5), transparent),
+      radial-gradient(1px 1px at 58% 51%, rgba(255, 249, 243, 0.35), transparent),
+      radial-gradient(1.3px 1.3px at 71% 27%, rgba(255, 249, 243, 0.5), transparent),
+      radial-gradient(1px 1px at 84% 63%, rgba(255, 249, 243, 0.32), transparent),
+      radial-gradient(1.5px 1.5px at 93% 18%, rgba(255, 249, 243, 0.45), transparent),
+      radial-gradient(1px 1px at 7% 82%, rgba(255, 249, 243, 0.3), transparent),
+      radial-gradient(1.2px 1.2px at 49% 88%, rgba(255, 249, 243, 0.35), transparent),
+      radial-gradient(1px 1px at 66% 79%, rgba(255, 249, 243, 0.28), transparent),
+      radial-gradient(1.3px 1.3px at 18% 45%, rgba(255, 249, 243, 0.42), transparent),
+      radial-gradient(1.1px 1.1px at 34% 31%, rgba(255, 249, 243, 0.38), transparent),
+      radial-gradient(1.5px 1.5px at 53% 9%, rgba(255, 249, 243, 0.48), transparent),
+      radial-gradient(1px 1px at 77% 44%, rgba(255, 249, 243, 0.33), transparent),
+      radial-gradient(1.4px 1.4px at 88% 87%, rgba(255, 249, 243, 0.4), transparent),
+      radial-gradient(1.2px 1.2px at 3% 58%, rgba(255, 249, 243, 0.36), transparent);
+  }
+
+  /* Far layer: many, faint, small. Reads as haze rather than countable points. */
+  .starfield::before {
+    content: "";
+    position: absolute;
+    inset: -10%;
+    background-image:
+      radial-gradient(0.8px 0.8px at 9% 12%, rgba(255, 249, 243, 0.24), transparent),
+      radial-gradient(0.7px 0.7px at 21% 39%, rgba(255, 249, 243, 0.2), transparent),
+      radial-gradient(0.9px 0.9px at 31% 76%, rgba(255, 249, 243, 0.26), transparent),
+      radial-gradient(0.7px 0.7px at 38% 23%, rgba(255, 249, 243, 0.18), transparent),
+      radial-gradient(0.8px 0.8px at 46% 61%, rgba(255, 249, 243, 0.22), transparent),
+      radial-gradient(0.7px 0.7px at 55% 33%, rgba(255, 249, 243, 0.19), transparent),
+      radial-gradient(0.9px 0.9px at 62% 91%, rgba(255, 249, 243, 0.25), transparent),
+      radial-gradient(0.7px 0.7px at 69% 17%, rgba(255, 249, 243, 0.2), transparent),
+      radial-gradient(0.8px 0.8px at 74% 57%, rgba(255, 249, 243, 0.23), transparent),
+      radial-gradient(0.7px 0.7px at 81% 29%, rgba(255, 249, 243, 0.18), transparent),
+      radial-gradient(0.9px 0.9px at 86% 72%, rgba(255, 249, 243, 0.24), transparent),
+      radial-gradient(0.7px 0.7px at 91% 41%, rgba(255, 249, 243, 0.2), transparent),
+      radial-gradient(0.8px 0.8px at 96% 84%, rgba(255, 249, 243, 0.22), transparent),
+      radial-gradient(0.7px 0.7px at 15% 93%, rgba(255, 249, 243, 0.19), transparent),
+      radial-gradient(0.9px 0.9px at 43% 5%, rgba(255, 249, 243, 0.25), transparent),
+      radial-gradient(0.7px 0.7px at 64% 68%, rgba(255, 249, 243, 0.18), transparent),
+      radial-gradient(0.8px 0.8px at 28% 54%, rgba(255, 249, 243, 0.21), transparent),
+      radial-gradient(0.7px 0.7px at 50% 79%, rgba(255, 249, 243, 0.17), transparent);
+    animation: star-drift-far 220s linear infinite;
+  }
+
+  /* Near layer: few, bright, with a visible glow. The ones the eye picks out. */
+  .starfield::after {
+    content: "";
+    position: absolute;
+    inset: -10%;
+    background-image:
+      radial-gradient(2px 2px at 23% 17%, rgba(255, 249, 243, 0.85), transparent),
+      radial-gradient(1.8px 1.8px at 61% 24%, rgba(255, 249, 243, 0.7), transparent),
+      radial-gradient(2.2px 2.2px at 79% 71%, rgba(255, 249, 243, 0.8), transparent),
+      radial-gradient(1.8px 1.8px at 37% 84%, rgba(255, 249, 243, 0.65), transparent),
+      radial-gradient(2px 2px at 8% 64%, rgba(255, 249, 243, 0.72), transparent),
+      radial-gradient(1.9px 1.9px at 95% 36%, rgba(255, 249, 243, 0.68), transparent);
+    animation: star-drift-near 140s linear infinite;
+  }
+
+  /**
+   * `transform` rather than `background-position`: a transform is composited,
+   * where shifting a sixteen-stop gradient stack repaints the whole layer
+   * every frame.
+   *
+   * Far and near drift in opposite directions, which is what sells the depth:
+   * the two planes separate over time instead of sliding as one sheet.
+   */
+  @keyframes star-drift-far {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-28px, 10px, 0);
+    }
+  }
+
+  @keyframes star-drift-near {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(46px, -16px, 0);
+    }
+  }
+
+  /**
+   * A drifting sky is decoration; for a reader who gets motion sick it is a
+   * reason to leave. Hold the stars still and keep the field they were placed
+   * in, rather than removing them.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .starfield,
+    .starfield::before,
+    .starfield::after {
+      animation: none;
+    }
+  }
 }
