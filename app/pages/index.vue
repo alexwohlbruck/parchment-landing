@@ -161,7 +161,15 @@ const onFormSubmit = handleSubmit(onSubmit);
                    pill's inherited 14px, which made the wordmark half the
                    height of the mark beside it and the only place on either
                    site where the brand is not spelled in Exposure. -->
-              <span class="display text-lg leading-none">Parchment</span>
+              <!-- Below 360 the mark carries the lockup alone. At that width
+                   the wordmark is 89px the bar does not have, and the choice
+                   is between dropping it and pushing the menu button out of
+                   the pill — which is what was happening. The mark is the
+                   brand's own object and reads as it on its own; a truncated
+                   "Parchme…" would not. -->
+              <span class="display text-lg leading-none max-[359px]:hidden">
+                Parchment
+              </span>
             </a>
           </template>
 

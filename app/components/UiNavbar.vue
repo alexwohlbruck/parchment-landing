@@ -38,7 +38,15 @@ const open = ref(false);
 
 <template>
   <nav class="nav-pill" :class="{ 'nav-pill-open': open }" aria-label="Primary">
-    <div class="relative flex items-center justify-between gap-6">
+    <!--
+      `gap-3` below sm. The brand and the actions are both `shrink-0` — a
+      wordmark that truncates and a CTA that wraps are both worse than a tight
+      bar — so nothing in this row can give, and a 24px minimum gap it cannot
+      afford is the difference between fitting and overflowing. Measured at
+      360px the row needs 302 of the 310 it has; at `gap-6` it needed 314 and
+      pushed the menu button out past the pill.
+    -->
+    <div class="relative flex items-center justify-between gap-3 sm:gap-6">
       <slot name="brand" />
 
       <!--
