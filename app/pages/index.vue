@@ -199,7 +199,7 @@ const onFormSubmit = handleSubmit(onSubmit);
         takes a measured step from that.
       -->
       <div
-        class="measure relative z-10 flex flex-col items-center pt-32 will-change-transform [transform-style:preserve-3d] [perspective:1000px] sm:pt-36"
+        class="measure relative z-20 flex flex-col items-center pt-32 will-change-transform [transform-style:preserve-3d] [perspective:1000px] sm:pt-36"
       >
         <ClientOnly>
           <!-- What shipped most recently, above the headline, on the same
@@ -347,13 +347,26 @@ const onFormSubmit = handleSubmit(onSubmit);
         That leaves (1 - 0.808) / 2 = 0.0961 of the canvas above the limb,
         which is the offset the wrapper applies.
 
-        `pointer-events-none` because the canvas is wider than the viewport and
-        overlaps the section below it: taking the pointer here would swallow
-        clicks on whatever lands there.
+        It is draggable, as barrelman's is, which is a stacking change rather
+        than a new feature — <HeroGlobe> has always had the handlers, and this
+        box was `pointer-events-none` so they could never fire.
+
+        The canvas is far taller than the globe you can see: at 1280 its top
+        edge is 144px *above* the bottom of the copy, so with the globe on top
+        it covered the form and swallowed clicks on the submit button. Putting
+        the copy above it instead solves that exactly, because the two only
+        overlap where the copy is: the column's box ends where the copy ends,
+        and the limb appears 56px below that. Every pixel of visible planet is
+        outside the column and takes the pointer; every pixel of form is inside
+        it and keeps it.
       -->
-      <div class="relative z-20">
+      <!-- `select-none`, as barrelman's globe box has: without it a drag that
+           starts on the planet and travels up the page selects the headline
+           and the form labels on its way, which is the browser's default
+           reading of a press-and-move over a document. -->
+      <div class="relative z-10 select-none">
         <div
-          class="pointer-events-none absolute left-1/2 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
+          class="absolute left-1/2 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
           :class="globeReady ? 'opacity-100' : 'opacity-0'"
           style="--globe: 163vw; top: calc(3.5rem - var(--globe) * 0.0961)"
         >

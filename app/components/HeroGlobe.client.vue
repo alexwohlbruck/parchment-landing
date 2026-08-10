@@ -678,14 +678,14 @@ function animate(now = 0) {
 /**
  * Drag to turn.
  *
- * The hero's globe box is `pointer-events-none` — the canvas is wider than the
- * viewport and overlaps the bottom of the waitlist form, so letting it take the
- * pointer would swallow clicks on the submit button. The handlers stay because
- * they belong to the component rather than to this page, and the page is the
- * right place to decide whether the planet is furniture or a control.
+ * The window-level listeners are what make a drag survive leaving the canvas —
+ * the pointer routinely ends up outside a sphere you are flinging — and they
+ * are registered through `on()` so they come off at unmount.
  *
- * The window-level listeners are what make a drag survive leaving the canvas;
- * they are registered through `on()` so they come off at unmount.
+ * Whether any of this can fire is the page's business: the canvas is far wider
+ * than the viewport, so a page that puts it over its own controls has to say
+ * so. <index> stacks the copy above it rather than disabling the pointer, so
+ * the planet is grabbable everywhere it is visible.
  */
 function attachEvents() {
   const canvas = canvasRef.value!;
@@ -787,7 +787,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="relative h-full w-full">
-    <canvas ref="canvasRef" class="h-full w-full"></canvas>
-  </div>
+  <canvas
+    ref="canvasRef"
+    class="h-full w-full cursor-grab active:cursor-grabbing"
+  ></canvas>
 </template>
