@@ -2,28 +2,28 @@
 /**
  * The floating nav pill.
  *
- * This and barrelman-landing's <SiteNav> are the same component written twice,
- * and every class string in the template below is byte-identical to the one
- * over there. They differ in three things only: the mark, the labels, and the
- * hrefs. If you change a size or a colour here, change it there.
+ * This and barrelman-landing's <SiteNav> are the same component, and every
+ * class string they share is byte-identical. They differ in the mark, the
+ * labels, the hrefs — and, deliberately, in where the CTA goes on a phone:
+ * "Get a key" is barrelman's ask, so its pill stays in the bar at every width,
+ * where Parchment's ask is the waitlist form further down the page.
  *
- * They had drifted in two ways that measurement caught and the eye did not:
+ * Two faults this fixed when it was written, both found by measuring:
  *
- * - Height. The pill is `.nav-pill` from @parchment/design, so its padding is
- *   shared, but the row inside it is as tall as the tallest thing in it — and
- *   that is the CTA. Barrelman's is a filled pill at `py-1.5`, 34px; this one
- *   was a ghost button at `h-8`, 32px. Two pixels, which nobody would see on
- *   one page and which meant the two headers were never the same object.
+ * - Height. The pill's padding is shared, but the row inside is as tall as the
+ *   tallest thing in it, and that is the CTA. Barrelman's filled pill is 34px
+ *   and this site's ghost button was 32px, so the two headers were never the
+ *   same object.
  * - Centring. Both were `justify-between` with the links as the middle child,
  *   which does not centre them — it centres the *gap left over* after the
  *   brand and the actions, and those are different widths on every page. The
- *   links are absolutely positioned at 50% now, so they sit on the bar's axis
- *   whatever is either side of them.
+ *   links are absolutely positioned at 50% now.
  *
- * The links are a prop rather than a slot because the mobile sheet has to
- * render the same list a second time, and a slot can only be used once.
+ * The links and the CTA are props rather than slots because the mobile sheet
+ * renders both a second time, and a slot can only be used once.
  */
 import { Menu, X } from "lucide-vue-next";
+import Button from "@/components/ui/button/Button.vue";
 
 interface NavLink {
   href: string;
@@ -31,9 +31,20 @@ interface NavLink {
   external?: boolean;
 }
 
-defineProps<{ links: NavLink[] }>();
+defineProps<{ links: NavLink[]; cta: NavLink }>();
 
 const open = ref(false);
+
+/**
+ * How the sheet opens is entirely in the template below — `grid-template-rows`
+ * from `0fr` to `1fr`, which is the one way to animate to a height nobody has
+ * measured. `height: auto` is not interpolable, and the usual workaround of
+ * animating to a large `max-height` makes the duration a lie: the panel
+ * reaches its real height early and then spends the rest of the time
+ * animating empty space, so a three-item menu and a six-item menu open at
+ * visibly different speeds. An `fr` track resolves against the content's own
+ * height every frame, so the timing is the timing whatever is in the menu.
+ */
 </script>
 
 <template>
@@ -42,9 +53,7 @@ const open = ref(false);
       `gap-3` below sm. The brand and the actions are both `shrink-0` — a
       wordmark that truncates and a CTA that wraps are both worse than a tight
       bar — so nothing in this row can give, and a 24px minimum gap it cannot
-      afford is the difference between fitting and overflowing. Measured at
-      360px the row needs 302 of the 310 it has; at `gap-6` it needed 314 and
-      pushed the menu button out past the pill.
+      afford is the difference between fitting and overflowing.
     -->
     <div class="relative flex items-center justify-between gap-3 sm:gap-6">
       <slot name="brand" />
@@ -70,34 +79,117 @@ const open = ref(false);
       </ul>
 
       <div class="flex shrink-0 items-center gap-1">
-        <slot name="cta" />
+        <!--
+          The bar carries the CTA only where it also carries the links. Below
+          `md` both live in the sheet instead, so the bar is a lockup and a
+          way to open the menu and nothing else — a filled pill wedged between
+          those two was the loudest object on a phone screen, for a
+          destination that is not what this page is asking of a visitor.
+        -->
+        <Button
+          :href="cta.href"
+          variant="dark"
+          size="pill"
+          class="max-md:hidden"
+        >
+          {{ cta.label }}
+        </Button>
+        <!--
+          Both icons are always mounted and cross-faded through a quarter
+          turn, rather than swapped with `v-if`. A swap is instant by
+          definition — there is no pair of states for CSS to interpolate
+          between if one of them was never in the DOM.
+        -->
         <button
-          class="ml-1 rounded-full p-1.5 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark md:hidden"
+          class="relative rounded-full p-1.5 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark md:hidden"
           :aria-expanded="open"
           aria-label="Toggle navigation"
           @click="open = !open"
         >
-          <X v-if="open" class="size-5" stroke-width="1.5" />
-          <Menu v-else class="size-5" stroke-width="1.5" />
+          <span class="relative block size-5">
+            <Menu
+              class="absolute inset-0 size-5 transition-all duration-200 ease-out motion-reduce:transition-none"
+              :class="open ? 'rotate-90 scale-50 opacity-0' : 'rotate-0 scale-100 opacity-100'"
+              stroke-width="1.5"
+            />
+            <X
+              class="absolute inset-0 size-5 transition-all duration-200 ease-out motion-reduce:transition-none"
+              :class="open ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-50 opacity-0'"
+              stroke-width="1.5"
+            />
+          </span>
         </button>
       </div>
     </div>
 
-    <ul
-      v-if="open"
-      class="mt-1 flex flex-col border-t border-rule pt-1 md:hidden"
+    <!--
+      The sheet.
+
+      Kept mounted rather than `v-if`, because a panel that is not in the DOM
+      has no closed state to animate *from* — the same reason both icons above
+      are mounted. `inert` takes it out of the tab order and off the
+      accessibility tree while it is shut, which `v-if` used to do for free.
+
+      Opening at 300ms on a strong decelerate, so almost all of the distance is
+      covered early and the panel reads as arriving rather than travelling.
+      Closing at 200ms and accelerating: a reader who has decided to dismiss
+      something is done with it and should not have to watch it leave.
+    -->
+    <div
+      class="grid transition-[grid-template-rows] motion-reduce:transition-none md:hidden"
+      :class="
+        open
+          ? 'grid-rows-[1fr] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]'
+          : 'grid-rows-[0fr] duration-200 ease-[cubic-bezier(0.4,0,1,1)]'
+      "
+      :inert="!open"
     >
-      <li v-for="link in links" :key="link.label">
-        <a
-          :href="link.href"
-          :target="link.external ? '_blank' : undefined"
-          :rel="link.external ? 'noopener' : undefined"
-          class="block rounded-lg px-2 py-2 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark"
-          @click="open = false"
+      <div class="min-h-0 overflow-hidden">
+        <ul class="mt-1 flex flex-col border-t border-rule pt-1">
+          <!--
+            Staggered, so the rows arrive as a list being dealt rather than as
+            one block sliding. The delay only applies on the way in: on the way
+            out they leave together, because a stagger in reverse reads as the
+            panel struggling to close.
+          -->
+          <li
+            v-for="(link, i) in links"
+            :key="link.label"
+            class="transition-all duration-300 ease-out motion-reduce:transition-none"
+            :class="open ? 'translate-y-0 opacity-100' : '-translate-y-1.5 opacity-0'"
+            :style="{ transitionDelay: open ? `${70 + i * 45}ms` : '0ms' }"
+          >
+            <a
+              :href="link.href"
+              :target="link.external ? '_blank' : undefined"
+              :rel="link.external ? 'noopener' : undefined"
+              class="block rounded-lg px-2 py-2 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark"
+              @click="open = false"
+            >
+              {{ link.label }}
+            </a>
+          </li>
+        </ul>
+
+        <!-- The action the sheet exists to make reachable, at the foot of it
+             and full width, which is where a thumb already is. Last in the
+             stagger: it is the thing to land on. -->
+        <div
+          class="transition-all duration-300 ease-out motion-reduce:transition-none"
+          :class="open ? 'translate-y-0 opacity-100' : '-translate-y-1.5 opacity-0'"
+          :style="{ transitionDelay: open ? `${70 + links.length * 45}ms` : '0ms' }"
         >
-          {{ link.label }}
-        </a>
-      </li>
-    </ul>
+          <Button
+            :href="cta.href"
+            variant="dark"
+            size="md"
+            class="mb-1 mt-2 w-full"
+            @click="open = false"
+          >
+            {{ cta.label }}
+          </Button>
+        </div>
+      </div>
+    </div>
   </nav>
 </template>

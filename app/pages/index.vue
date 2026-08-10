@@ -66,6 +66,13 @@ const links = [
   { href: config.barrelmanUrl, label: "Barrelman", external: true },
 ];
 
+/**
+ * The one action in the header. A prop rather than a slot because the nav
+ * renders it twice — as a pill in the bar from `md` up, and at the foot of the
+ * mobile sheet below it, where the links live too.
+ */
+const cta = { href: config.appUrl as string, label: "Launch app →" };
+
 const WaitlistSchema = z.object({
   name: z
     .string()
@@ -134,7 +141,7 @@ const onFormSubmit = handleSubmit(onSubmit);
 
       <!-- Nav bar -->
       <div class="relative z-30">
-        <UiNavbar :links="links">
+        <UiNavbar :links="links" :cta="cta">
           <template #brand>
             <a href="/" class="flex shrink-0 items-center gap-2 text-base-dark">
               <svg
@@ -171,42 +178,6 @@ const onFormSubmit = handleSubmit(onSubmit);
                 Parchment
               </span>
             </a>
-          </template>
-
-          <!--
-            Two renderings of one destination.
-
-            From `sm` up it is the filled pill barrelman's "Get a key" is, at
-            the same padding, which is what makes the two headers the same
-            height.
-
-            Below `sm` it is a plain link. A phone's bar is already carrying a
-            lockup and a menu button, and a filled pill next to those is the
-            loudest object on the screen for a destination that is not what
-            this page is asking of a visitor — the waitlist form is. It also
-            gives the row back ~60px, which is most of why the bar was cramped
-            enough to push the menu button out of the pill.
-
-            barrelman keeps its pill at every width, deliberately: "Get a key"
-            *is* the ask there. This is the one place the two navs differ, and
-            it differs on what the site wants rather than on how the bar is
-            built.
-          -->
-          <template #cta>
-            <a
-              :href="config.appUrl"
-              class="rounded-full px-2 py-1.5 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark sm:hidden"
-            >
-              Launch app →
-            </a>
-            <Button
-              :href="config.appUrl"
-              variant="dark"
-              size="pill"
-              class="max-sm:hidden"
-            >
-              Launch app →
-            </Button>
           </template>
         </UiNavbar>
       </div>
