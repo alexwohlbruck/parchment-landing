@@ -11,6 +11,33 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const RATE_LIMIT_MAX = 5; // max submissions per IP per window
 const ipToTimestamps: Map<string, number[]> = new Map();
 
+/**
+ * What a signup reports back.
+ *
+ * `duplicate` is the part the page actually branches on. Both paths below have
+ * always known whether an address was already on the list — the Apps Script
+ * returns it, and the in-memory backstop checks for it — and both used to
+ * spend that knowledge writing one of two English sentences into `message`,
+ * which left the client unable to tell the two apart without matching on
+ * prose. The flag is the answer; the sentence is one rendering of it, kept so
+ * an older client still has something to show.
+ */
+export interface WaitlistResult {
+  ok: true;
+  duplicate: boolean;
+  message: string;
+}
+
+function result(duplicate: boolean): WaitlistResult {
+  return {
+    ok: true,
+    duplicate,
+    message: duplicate
+      ? "You're already on the waitlist."
+      : "Thanks! You're on the waitlist.",
+  };
+}
+
 // Backstop store used when the waitlist endpoint isn't configured or the
 // request to it fails, so a signup is never lost to an unhandled error.
 function recordInMemory(entry: {
@@ -23,12 +50,7 @@ function recordInMemory(entry: {
   if (!already) {
     memorySubmissions.push({ ...entry, ts: new Date().toISOString() });
   }
-  return {
-    ok: true as const,
-    message: already
-      ? "You're already on the waitlist."
-      : "Thanks! You're on the waitlist.",
-  };
+  return result(already);
 }
 
 export default defineEventHandler(async (event) => {
@@ -87,7 +109,7 @@ export default defineEventHandler(async (event) => {
   // responds with { ok: boolean, duplicate?: boolean }. If the call fails for
   // any reason, log it and fall back to memory rather than losing the signup.
   try {
-    const result = await $fetch<{ ok?: boolean; duplicate?: boolean }>(
+    const upstream = await $fetch<{ ok?: boolean; duplicate?: boolean }>(
       scriptUrl,
       {
         method: "POST",
@@ -95,15 +117,10 @@ export default defineEventHandler(async (event) => {
         body: { name, email, variant, ts: new Date().toISOString() },
       }
     );
-    if (!result?.ok) {
+    if (!upstream?.ok) {
       throw new Error("Waitlist endpoint returned a non-ok response");
     }
-    return {
-      ok: true,
-      message: result.duplicate
-        ? "You're already on the waitlist."
-        : "Thanks! You're on the waitlist.",
-    };
+    return result(Boolean(upstream.duplicate));
   } catch (err) {
     console.error(
       "[waitlist] Apps Script submission failed; falling back to in-memory store:",

@@ -4,7 +4,7 @@ import { useForm, type SubmissionHandler } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import { z } from "zod";
 import { toast } from "vue-sonner";
-import { LoaderCircle } from "lucide-vue-next";
+import { Check, LoaderCircle, MailCheck } from "lucide-vue-next";
 import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
@@ -98,9 +98,24 @@ const abCookieName =
   (useRuntimeConfig().public.abCookieName as string) || "ab_variant";
 const abVariant = useCookie<string>(abCookieName);
 
+/**
+ * The outcome of a signup, or null while there has not been one.
+ *
+ * The form is replaced by this rather than cleared. A toast was the only
+ * feedback before, and a toast is the wrong shape for it: it appears away from
+ * the thing you just used, it leaves after a few seconds, and it leaves behind
+ * an empty form — which reads as "nothing happened, try again" to anyone who
+ * looked away, and is how people end up submitting twice.
+ *
+ * The address is kept because it is the useful part of the confirmation: what
+ * a person wants to know is not that a button worked, it is which mailbox to
+ * watch, and whether they typed it correctly.
+ */
+const signup = ref<{ email: string; duplicate: boolean } | null>(null);
+
 const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
   try {
-    const { message } = await $fetch("/api/waitlist", {
+    const { duplicate } = await $fetch("/api/waitlist", {
       method: "POST",
       body: {
         name: values.name,
@@ -108,12 +123,21 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
         variant: abVariant.value || "A",
       },
     });
-    toast.success(message || "You're on the list!");
+    signup.value = { email: values.email, duplicate: Boolean(duplicate) };
     resetForm();
   } catch (err: any) {
+    // Failures stay in a toast. They are the case where the form has to remain
+    // on screen with what you typed still in it, so the message has nowhere
+    // else to go.
     toast.error(err?.data?.message || err?.message || "Something went wrong");
   }
 };
+
+/** Back to the form — mostly for "already on the list", where the natural next
+ *  thought is that you used a different address the first time. */
+function signUpAgain() {
+  signup.value = null;
+}
 
 // handleSubmit validates first and only runs onSubmit when the form is valid.
 const onFormSubmit = handleSubmit(onSubmit);
@@ -244,18 +268,160 @@ const onFormSubmit = handleSubmit(onSubmit);
               community.
             </p>
           </div>
-          <div v-motion="fadeUp(0.4)">
-            <form class="mt-9 w-full max-w-xl" @submit.prevent="onFormSubmit">
+          <!--
+            The announcement lives here rather than on the panel below.
+
+            The panel is `inert` whenever it is hidden, and an inert element is
+            off the accessibility tree — so an `aria-live` on it would go
+            unread, which is exactly the regression that keeping both states
+            mounted introduces. This region is always present and never inert,
+            so the text appearing in it is what gets spoken.
+          -->
+          <p class="sr-only" role="status" aria-live="polite">
+            {{
+              signup
+                ? signup.duplicate
+                  ? `We already have ${signup.email} on the waitlist.`
+                  : `You are on the waitlist. We will email ${signup.email}.`
+                : ""
+            }}
+          </p>
+
+          <!--
+            The waitlist slot.
+
+            Both states are mounted and stacked in one grid cell, so this box
+            is always as tall as the taller of them and swapping between them
+            changes nothing about the layout. That matters because the globe
+            hangs off the bottom of this column: with `v-if` the form gave way
+            to a panel of a different height and the whole planet stepped up or
+            down at the moment of submitting, which is the one moment the eye
+            is already somewhere else.
+
+            No fixed height doing it, so the reserve is whatever the states
+            actually need at that width — which reverses between breakpoints:
+            on a phone the stacked form is the taller, on a desktop the
+            confirmation is.
+
+            `inert` on whichever is hidden, so the invisible one is out of the
+            tab order rather than merely transparent.
+          -->
+          <div v-motion="fadeUp(0.4)" class="mt-9 grid w-full max-w-xl">
+            <!--
+              The confirmation, in place of the form.
+
+              Two states, not one. The endpoint has always known whether an
+              address was already on the list — it is what the Apps Script
+              returns — and both outcomes used to arrive as the same green
+              toast, so the one piece of information a returning visitor wants
+              was the one thing the page would not tell them.
+            -->
+            <!--
+              Driven by `signup` rather than by `v-motion`. Both states are
+              mounted now, so a mount-triggered animation fires on page load —
+              while this panel is still invisible — and the arrival nobody was
+              looking at is the only one that ever plays. A class transition
+              replays every time the state actually changes, which is the
+              moment worth animating.
+            -->
+            <div
+              class="depth col-start-1 row-start-1 flex flex-col gap-3 self-start rounded-lg border border-rule-strong bg-parchment/85 px-4 py-3 text-left transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none sm:flex-row sm:items-center"
+              :class="
+                signup
+                  ? 'translate-y-0 opacity-100'
+                  : 'pointer-events-none translate-y-2 opacity-0'
+              "
+              :inert="!signup"
+            >
+              <div class="flex items-center gap-3">
+                <!--
+                  The mark is the one thing that moves on arrival; everything
+                  else is already still by the time the eye reaches it.
+
+                  Solid for a new signup, tinted for a returning one. A 12%
+                  wash behind a stroked glyph was almost invisible against
+                  paper, and the mark is what the eye lands on before it reads
+                  a word. The duplicate case stays quiet on purpose: it is a
+                  reassurance, not a celebration, and should not congratulate
+                  somebody for doing nothing.
+                -->
+                <span
+                  class="grid size-9 shrink-0 place-items-center rounded-full transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
+                  :class="[
+                    signup ? 'scale-100 delay-100' : 'scale-50',
+                    signup?.duplicate
+                      ? 'bg-paper-deep text-ink-soft'
+                      : 'bg-brand text-parchment shadow-[0_1px_3px_rgba(0,147,242,0.4)]',
+                  ]"
+                >
+                  <MailCheck
+                    v-if="signup?.duplicate"
+                    class="size-5"
+                    stroke-width="1.75"
+                  />
+                  <Check v-else class="size-5" stroke-width="2.75" />
+                </span>
+
+                <div class="min-w-0">
+                  <p class="font-medium text-base-dark">
+                    {{
+                      signup?.duplicate
+                        ? "You're already on the list."
+                        : "You're on the list."
+                    }}
+                  </p>
+                  <!--
+                    Wrapped, not truncated. The address is the whole point of
+                    the line — it is how you check you typed it right — and on
+                    a phone `truncate` cut it to "fresh-signup…", which hides
+                    exactly the part worth reading.
+                  -->
+                  <p class="break-words text-caption text-ink-soft">
+                    <template v-if="signup?.duplicate">
+                      We have {{ signup?.email }} — no need to sign up twice.
+                    </template>
+                    <template v-else>
+                      We'll email {{ signup?.email }} when Parchment opens up.
+                    </template>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Wrong address, or a different one. The likeliest next
+                   thought after "already on the list" is that you used
+                   another. Below the text on a phone, beside it once there is
+                   room. -->
+              <button
+                type="button"
+                class="shrink-0 self-start rounded-md px-2 py-1 text-caption text-ink-soft underline decoration-rule-strong underline-offset-4 transition-colors hover:text-base-dark hover:decoration-ink-soft sm:ml-auto sm:self-center"
+                @click="signUpAgain"
+              >
+                {{ signup?.duplicate ? "Use another" : "Change" }}
+              </button>
+            </div>
+
+            <form
+              class="col-start-1 row-start-1 w-full self-start transition-opacity duration-200"
+              :class="signup ? 'pointer-events-none opacity-0' : 'opacity-100'"
+              :inert="!!signup"
+              @submit.prevent="onFormSubmit"
+            >
               <!-- Stacked below sm. Three controls in a 375px row left the two
                    fields about 100px wide each, which is narrower than the
                    words in them; barrelman's hero takes the same escape with
-                   `max-sm:w-full` on its pair of CTAs. -->
+                   `max-sm:w-full` on its pair of CTAs.
+
+                   Validation messages are positioned out of flow, under their
+                   own field. In flow they grew the form, and the form is what
+                   the globe's position is measured from — so a mistyped email
+                   moved the planet. They also shoved the row itself down as
+                   you typed, which is its own small cruelty. -->
               <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
                 <FormField
                   v-slot="{ value, handleChange, handleBlur }"
                   name="name"
                 >
-                  <FormItem class="flex-1">
+                  <FormItem class="relative flex-1">
                     <FormLabel class="sr-only">Name</FormLabel>
                     <FormControl>
                       <Input
@@ -269,14 +435,14 @@ const onFormSubmit = handleSubmit(onSubmit);
                         @blur="handleBlur"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage class="absolute left-0 top-full mt-1" />
                   </FormItem>
                 </FormField>
                 <FormField
                   v-slot="{ value, handleChange, handleBlur }"
                   name="email"
                 >
-                  <FormItem class="flex-[1.2]">
+                  <FormItem class="relative flex-[1.2]">
                     <FormLabel class="sr-only">Email</FormLabel>
                     <FormControl>
                       <Input
@@ -292,7 +458,7 @@ const onFormSubmit = handleSubmit(onSubmit);
                         @blur="handleBlur"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage class="absolute left-0 top-full mt-1" />
                   </FormItem>
                 </FormField>
                 <Button
@@ -333,11 +499,21 @@ const onFormSubmit = handleSubmit(onSubmit);
         — 0.0961 of it, see below — which puts the horizon a fixed step under
         the copy at every width, with no breakpoints in it at all.
 
-        The step is 3.5rem, which is `mt-14`: the same one barrelman's hero
-        takes from its CTA row down to the demo widget. The globe is not a demo
-        widget, but it is the next block after the copy, and the hero's rhythm
-        should not acquire a fifth number just because this block happens to be
-        a planet.
+        The step is 5rem, and it is the one number in this hero that is not on
+        barrelman's scale.
+
+        It was 3.5rem — `mt-14`, the step barrelman takes from its CTA row down
+        to the demo widget — on the reasoning that the rhythm should not gain a
+        fifth number just because the next block happens to be a planet. That
+        was measuring the wrong edge. Barrelman steps down to a panel with a
+        border: its top edge is where it begins. The globe's atmosphere is
+        brightest at the limb and fades upward through roughly 12vw of canvas
+        above it, so at an identical 56px the planet reads as arriving well
+        before the number says it does, and it crowded the form.
+
+        5rem restores the gap the scale was trying to describe. The scale is
+        for type; this is the distance at which a light source stops leaning on
+        an input.
 
         The two constants:
 
