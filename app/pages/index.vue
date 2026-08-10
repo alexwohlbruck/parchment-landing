@@ -66,6 +66,13 @@ const links = [
   { href: config.barrelmanUrl, label: "Barrelman", external: true },
 ];
 
+/**
+ * The one action in the header. A prop rather than a slot because the nav
+ * renders it twice — as a pill in the bar from `md` up, and at the foot of the
+ * mobile sheet below it, where the links live too.
+ */
+const cta = { href: config.appUrl as string, label: "Launch app →" };
+
 const WaitlistSchema = z.object({
   name: z
     .string()
@@ -134,7 +141,7 @@ const onFormSubmit = handleSubmit(onSubmit);
 
       <!-- Nav bar -->
       <div class="relative z-30">
-        <UiNavbar :links="links">
+        <UiNavbar :links="links" :cta="cta">
           <template #brand>
             <a href="/" class="flex shrink-0 items-center gap-2 text-base-dark">
               <svg
@@ -171,16 +178,6 @@ const onFormSubmit = handleSubmit(onSubmit);
                 Parchment
               </span>
             </a>
-          </template>
-
-          <!-- The CTA is the filled pill barrelman's "Get a key" is, at the
-               same padding, so the two headers are the same height. It was a
-               ghost button, which is 2px shorter and made the whole bar 2px
-               shorter with it. -->
-          <template #cta>
-            <Button :href="config.appUrl" variant="dark" size="pill">
-              Launch app →
-            </Button>
           </template>
         </UiNavbar>
       </div>

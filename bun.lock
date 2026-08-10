@@ -450,7 +450,7 @@
 
     "@parcel/watcher-win32-x64": ["@parcel/watcher-win32-x64@2.5.1", "", { "os": "win32", "cpu": "x64" }, "sha512-9lHBdJITeNR++EvSQVUcaZoWupyHfXe1jZvGZ06O/5MflPcuPLtEphScIBL+AiCWBO46tDSHzWyD0uDmmZqsgA=="],
 
-    "@parchment/design": ["@parchment/design@github:alexwohlbruck/parchment-design#b3c9a35", { "peerDependencies": { "tailwindcss": "^4.0.0" } }, "alexwohlbruck-parchment-design-b3c9a35", "sha512-+P1JywiFolD09aGt4xGE8zxWwHxhfReVU0LyVpUlaDkDNfVlXN390xJzJK57PLSbaa2TkWABYtjLKMAgHW0LKw=="],
+    "@parchment/design": ["@parchment/design@github:alexwohlbruck/parchment-design#c6a281c", { "peerDependencies": { "tailwindcss": "^4.0.0" } }, "alexwohlbruck-parchment-design-c6a281c", "sha512-xrKEi8id9++yORW7M0mY/7486hR/Z3bgNt082IT+EIH9y1HTxaw4HvGD7VP6D24W9QHxZAIdN6rqqqwYvLEdvA=="],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
