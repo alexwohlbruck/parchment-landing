@@ -96,6 +96,12 @@ const CAM_Z = 3.1;
  * runs out on its own before the frame does. That makes the planet smaller
  * within the canvas, which <index> takes back by making the canvas
  * proportionally larger: same globe on screen, with room around it.
+ *
+ * On this branch the halved scale height below already takes the density to
+ * nothing long before the shell, so the cut could not happen at 45° either.
+ * The lens stays where it is anyway: it is the framing the other branch uses,
+ * and the two should not be a different size on screen for a reason that is
+ * really about a shader constant.
  */
 const FOV = 48.5;
 
@@ -241,8 +247,21 @@ function init() {
       sunColor: { value: SUN_COLOR },
       duskColor: { value: DUSK_COLOR },
       skyColor: { value: SKY_COLOR },
-      /** Earthshine and starlight: what the night side is lit by, which is not nothing. */
-      nightColor: { value: new THREE.Color(0.035, 0.05, 0.085) },
+      /**
+       * What the night side is lit by.
+       *
+       * Over barrelman's night band this is earthshine and starlight, and it is
+       * nearly nothing — correctly, because the sky it sits in is nearly
+       * nothing too. On paper there is no such agreement: a night side at 4% of
+       * albedo against a page at 97% is a hole cut in the sheet, and it is the
+       * heaviest thing in the hero by a distance.
+       *
+       * Lifted, and lifted warm, so the unlit side reads as the shaded part of
+       * a drawn globe rather than as an absence. It is no longer earthshine —
+       * it is the ambient a printed illustration gets from the paper around it,
+       * which is the honest description of what this hero is.
+       */
+      nightColor: { value: new THREE.Color(0.2, 0.185, 0.165) },
       grainScale: { value: 900.0 },
       grainAmount: { value: 0.022 },
       horizonEdge: { value: HORIZON_EDGE },
@@ -303,12 +322,14 @@ function init() {
         // so the real falloff is wider than Lambert and never reaches a hard
         // edge; the wrap is the cheap stand-in for that.
         //
-        // Kept narrow, and steepened afterwards. A generous wrap holds the
-        // terminator at a fifth of full brightness across a band tens of pixels
-        // wide, which at this scale is not a soft edge but a pale sash lying on
-        // top of the ocean. Dusk should be a strip, not a region.
-        float wrap = 0.10;
-        float day = pow(clamp((toothed + wrap) / (1.0 + wrap), 0.0, 1.0), 1.3);
+        // Wider and flatter than the night-band version, which kept dusk to a
+        // strip because a pale sash across a dark ocean is the failure mode
+        // there. On paper the failure mode is the opposite one: a narrow
+        // terminator against a light page is a hard edge between a lit globe
+        // and a dark shape, and the eye reads the two as different objects.
+        // A long ramp is what makes it one sphere turning away from a light.
+        float wrap = 0.30;
+        float day = pow(clamp((toothed + wrap) / (1.0 + wrap), 0.0, 1.0), 1.0);
 
         // Grazing light has crossed more atmosphere and comes out red.
         vec3 light = sunlightAt(ndl, sunColor, duskColor);
@@ -358,8 +379,28 @@ function init() {
     new THREE.ShaderMaterial({
       uniforms: {
         sunDir: { value: SUN },
-        dayColor: { value: SKY_COLOR },
-        duskColor: { value: new THREE.Color(1.0, 0.5, 0.24) },
+        /**
+         * Sky blue, walked toward cyan for this ground.
+         *
+         * The surface keeps SKY_COLOR — it is multiplied into an albedo that is
+         * mostly ocean, and reads as haze. The shell adds it to bare paper,
+         * where 0.38/0.58/1.0 is a blue with more red under it than the page
+         * has, and the rim came out lavender: a colour neither the palette nor
+         * the sky contains. Pulling the blue down and the green up lands it on
+         * the same hue the ocean underneath is already using.
+         */
+        dayColor: { value: new THREE.Color(0.4, 0.64, 0.92) },
+        /**
+         * Dusk, pulled back from the vermilion the night band uses.
+         *
+         * Additive blending only ever brightens, so over --space an orange at
+         * full chroma lands on black and reads as sunset. Over warm paper the
+         * page is already most of the way to that hue, and the same orange adds
+         * to it rather than replacing it — the limb came out as a pink-tan
+         * smear sitting on the map, which is the one colour on the page that
+         * looks like a printing fault.
+         */
+        duskColor: { value: new THREE.Color(0.92, 0.6, 0.42) },
         earthRadius: { value: EARTH_R },
         shellRadius: { value: ATMO_R },
         /**
@@ -368,9 +409,20 @@ function init() {
          * a hairline nobody would see. Exaggerated to something drawable, but
          * still exponential, which is the part that matters: the rim is bright
          * and tight at the horizon and gone well before the shell's own edge.
+         *
+         * Half the night band's, because "gone" means something different on
+         * paper. Against black, air at 5% of full glow is invisible and the
+         * generous falloff is free. Against a sheet at 97% white it is a haze
+         * lying over the map for a fifth of the viewport, and the map is the
+         * thing it is lying over.
          */
-        scaleHeight: { value: 0.052 },
-        intensity: { value: 1.45 },
+        scaleHeight: { value: 0.032 },
+        /**
+         * And dimmer. Additive over paper has almost no headroom before it
+         * clips to white: at 1.45 the rim was not air, it was a neon line
+         * traced round the limb.
+         */
+        intensity: { value: 0.62 },
       },
       vertexShader: `
         varying vec3 vViewPos;
@@ -626,14 +678,14 @@ function animate(now = 0) {
 /**
  * Drag to turn.
  *
- * The hero's globe box is `pointer-events-none` — the canvas is wider than the
- * viewport and overlaps the bottom of the waitlist form, so letting it take the
- * pointer would swallow clicks on the submit button. The handlers stay because
- * they belong to the component rather than to this page, and the page is the
- * right place to decide whether the planet is furniture or a control.
+ * The window-level listeners are what make a drag survive leaving the canvas —
+ * the pointer routinely ends up outside a sphere you are flinging — and they
+ * are registered through `on()` so they come off at unmount.
  *
- * The window-level listeners are what make a drag survive leaving the canvas;
- * they are registered through `on()` so they come off at unmount.
+ * Whether any of this can fire is the page's business: the canvas is far wider
+ * than the viewport, so a page that puts it over its own controls has to say
+ * so. <index> stacks the copy above it rather than disabling the pointer, so
+ * the planet is grabbable everywhere it is visible.
  */
 function attachEvents() {
   const canvas = canvasRef.value!;
@@ -735,7 +787,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="relative h-full w-full">
-    <canvas ref="canvasRef" class="h-full w-full"></canvas>
-  </div>
+  <canvas
+    ref="canvasRef"
+    class="h-full w-full cursor-grab active:cursor-grabbing"
+  ></canvas>
 </template>

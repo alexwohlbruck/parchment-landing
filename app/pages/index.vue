@@ -9,6 +9,8 @@ import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
 import HeroGlobe from "@/components/HeroGlobe.client.vue";
+import ReleasePill from "@/components/ReleasePill.vue";
+import type { LatestRelease } from "~~/server/api/release.get";
 import {
   FormField,
   FormItem,
@@ -24,13 +26,44 @@ const fadeUp = (delay: number) =>
     enter: { opacity: 1, y: 0, transition: { duration: 0.7, delay } },
   }) as const;
 
-// Placeholder nav — no destination pages exist yet
+const { public: config } = useRuntimeConfig();
+
+/**
+ * The latest release, for the pill above the headline.
+ *
+ * Fetched here rather than inside <ReleasePill>, because the pill renders
+ * under <ClientOnly> and a fetch in there would run once per visitor. The
+ * endpoint is a cached same-origin proxy, so on the server this resolves out
+ * of memory and the value travels down in the payload.
+ */
+const { data: release } = await useFetch<LatestRelease | null>(
+  "/api/release",
+  // The pill is an ornament: if GitHub is unreachable the hero renders with
+  // one fewer element rather than erroring.
+  { default: () => null }
+);
+
+/**
+ * The nav, cut down to the links that have somewhere to go.
+ *
+ * All five of these used to be `href="#"`. A nav of dead links is worse than a
+ * short one: it advertises a blog, a resources section and a pricing page that
+ * do not exist, and the first thing a visitor learns about the product is that
+ * its own header does not work.
+ *
+ * Blog, Resources and Pricing are commented out rather than deleted — they are
+ * planned, and this is the list to add them back to.
+ *
+ * "Developers" is now "Docs", which is what it is. The old label named an
+ * audience and left you guessing what was behind it.
+ */
 const links = [
-  { href: "#", label: "Download" },
-  { href: "#", label: "Developers" },
-  { href: "#", label: "Blog" },
-  { href: "#", label: "Resources" },
-  { href: "#", label: "Pricing" },
+  { href: config.releasesUrl, label: "Download", external: true },
+  { href: config.docsUrl, label: "Docs", external: true },
+  // { href: "#", label: "Blog" },
+  // { href: "#", label: "Resources" },
+  // { href: "#", label: "Pricing" },
+  { href: config.barrelmanUrl, label: "Barrelman", external: true },
 ];
 
 const WaitlistSchema = z.object({
@@ -101,7 +134,7 @@ const onFormSubmit = handleSubmit(onSubmit);
 
       <!-- Nav bar -->
       <div class="relative z-30">
-        <UiNavbar>
+        <UiNavbar :links="links">
           <template #brand>
             <a href="/" class="flex shrink-0 items-center gap-2 text-base-dark">
               <svg
@@ -128,18 +161,24 @@ const onFormSubmit = handleSubmit(onSubmit);
                    pill's inherited 14px, which made the wordmark half the
                    height of the mark beside it and the only place on either
                    site where the brand is not spelled in Exposure. -->
-              <span class="display text-lg leading-none">Parchment</span>
+              <!-- Below 360 the mark carries the lockup alone. At that width
+                   the wordmark is 89px the bar does not have, and the choice
+                   is between dropping it and pushing the menu button out of
+                   the pill — which is what was happening. The mark is the
+                   brand's own object and reads as it on its own; a truncated
+                   "Parchme…" would not. -->
+              <span class="display text-lg leading-none max-[359px]:hidden">
+                Parchment
+              </span>
             </a>
           </template>
 
-          <li v-for="link in links" :key="link.label">
-            <a :href="link.href" class="cursor-pointer transition-colors hover:text-base-dark">
-              {{ link.label }}
-            </a>
-          </li>
-
+          <!-- The CTA is the filled pill barrelman's "Get a key" is, at the
+               same padding, so the two headers are the same height. It was a
+               ghost button, which is 2px shorter and made the whole bar 2px
+               shorter with it. -->
           <template #cta>
-            <Button href="https://parchment.app" variant="ghost" size="sm">
+            <Button :href="config.appUrl" variant="dark" size="pill">
               Launch app →
             </Button>
           </template>
@@ -149,22 +188,55 @@ const onFormSubmit = handleSubmit(onSubmit);
       <!-- Hero content. `.measure` is the shared column — same max width and
            same gutter as every band on barrelman-landing, so the two sites
            set copy against the same left edge. -->
+      <!--
+        `pt-32 sm:pt-36` is barrelman's <SiteHero>, to the pixel, and it is a
+        measured top edge rather than a centred one for that reason.
+
+        Centring the stack in the first 65dvh put the pill 170px below the
+        section top against barrelman's 144px — the rest of the rhythm below
+        (28 / 28 / 36) was already identical, so this was the only gap in the
+        hero that did not match, and it was the first one anybody sees. A
+        centred block cannot match a measured one anyway: its top edge moves
+        whenever the copy changes length.
+
+        No `min-h` either. It was 65dvh, which made the column a viewport
+        fraction rather than a stack of copy, and the globe hangs off its
+        bottom edge — so the horizon was 149px below the form on a desktop and
+        18px below it on a phone, for no reason either number could be traced
+        to. The column is exactly as tall as what is in it now, and the globe
+        takes a measured step from that.
+      -->
       <div
-        class="measure relative z-10 flex h-[65dvh] flex-col items-center justify-center will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
+        class="measure relative z-20 flex flex-col items-center pt-32 will-change-transform [transform-style:preserve-3d] [perspective:1000px] sm:pt-36"
       >
         <ClientOnly>
+          <!-- What shipped most recently, above the headline, on the same
+               pattern as barrelman's hero. It leads the stagger because it is
+               the first line of the page: a visitor who already knows what
+               Parchment is wants the news, not the pitch. -->
+          <div v-motion="fadeUp(0)" class="mb-7 flex w-full justify-center">
+            <ReleasePill :release="release" />
+          </div>
           <div v-motion="fadeUp(0.1)">
-            <!-- `.display` carries the face and the axis; only the leading is
-                 set here, because this is a three-line stack of very large
-                 type and the class's 1.02 opens a gap between the lines. -->
+            <!--
+              The same heading barrelman sets: the same ramp, and `.display`'s
+              own 1.02 leading rather than an override.
+
+              It was clamp(2rem, 6vw, 4.6rem) at leading-[0.9] — 73.6px against
+              barrelman's 62.4px, set 12% tighter. Same face, same axis, same
+              400 weight, and it still read as a heavier typeface, because at
+              that size and that leading it is a denser block of ink. Nothing
+              about the font was ever different; the two numbers around it
+              were.
+            -->
             <h1
-              class="display max-w-4xl text-balance text-center text-[clamp(2rem,6vw,4.6rem)] leading-[0.9] text-base-dark"
+              class="display max-w-4xl text-balance text-center text-[clamp(2.2rem,5.2vw,3.9rem)] text-base-dark"
             >
               The
-              <span
-                class="relative text-brand [text-shadow:2px_2px_0_rgba(63,47,30,0.16)]"
-                >next generation</span
-              >
+              <!-- No drop shadow. barrelman's blue is flat, and an offset
+                   brown behind this one thickened every stem — which is most
+                   of what read as a weight difference between the sites. -->
+              <span class="text-brand">next generation</span>
               of<br />
               digital maps
             </h1>
@@ -246,31 +318,68 @@ const onFormSubmit = handleSubmit(onSubmit);
       <!--
         The globe.
 
-        Two numbers, and both are the projection rather than values found by
-        nudging. <HeroGlobe> now sees 48.5° instead of 45° — the atmosphere
-        does not fit a 45° frame, and what the top edge of this box used to cut
-        was a live 8% of the glow, drawn as a horizontal rule across the map.
+        Anchored to the bottom of the content column above it, not to the
+        middle of the section.
 
-        Through 48.5° the r=1.06 sphere covers tan(asin(1.06/3.1)) / tan(24.25°)
-        = 0.808 of the frame, against 0.878 through 45°. So the canvas grows by
-        that ratio — 150vw becomes 163vw — and the planet on screen is exactly
-        the size it was, with air around it instead of a cut.
+        A viewport fraction was right for one viewport. The copy above it is a
+        short block on a desktop and three or four times taller on a phone —
+        the headline wraps to three lines, the form becomes three stacked rows
+        — while the horizon stayed at a fixed fraction of the section, so the
+        limb came up through the email field. Measured at 375x812 the overlap
+        was 78px; the breakpoint that fixed it left 0px of clearance at exactly
+        640 and 7px at 768, which is the shape of a number being nudged rather
+        than derived.
 
-        The lift is the difference between where the limb sits in the old frame
-        and the new one: 0.0961 of the canvas above the limb now against 0.0608
-        before, which against a 163vw box is 0.0402 of it. Without the lift the
-        wider canvas would push the horizon down the page.
+        The wrapper is an empty relative box in flow, so its `top: 0` *is* the
+        column's bottom edge, whatever the column turned out to be. The canvas
+        is then pulled up by exactly the distance from its own top to the limb
+        — 0.0961 of it, see below — which puts the horizon a fixed step under
+        the copy at every width, with no breakpoints in it at all.
 
-        `pointer-events-none` because the canvas is wider than the viewport and
-        its top overlaps the bottom of the form: taking the pointer here would
-        swallow clicks on the submit button.
+        The step is 3.5rem, which is `mt-14`: the same one barrelman's hero
+        takes from its CTA row down to the demo widget. The globe is not a demo
+        widget, but it is the next block after the copy, and the hero's rhythm
+        should not acquire a fifth number just because this block happens to be
+        a planet.
+
+        The two constants:
+
+        <HeroGlobe> sees 48.5° rather than 45°, because the atmosphere does not
+        fit a 45° frame — the top edge of this box used to cut a live 8% of the
+        glow and draw it as a horizontal rule across the map. Through 48.5° the
+        r=1.06 sphere covers tan(asin(1.06/3.1)) / tan(24.25°) = 0.808 of the
+        frame, against 0.878 through 45°, so the canvas grows by that ratio —
+        150vw became 163vw — and the planet on screen is the size it always
+        was, with air around it instead of a cut.
+
+        That leaves (1 - 0.808) / 2 = 0.0961 of the canvas above the limb,
+        which is the offset the wrapper applies.
+
+        It is draggable, as barrelman's is, which is a stacking change rather
+        than a new feature — <HeroGlobe> has always had the handlers, and this
+        box was `pointer-events-none` so they could never fire.
+
+        The canvas is far taller than the globe you can see: at 1280 its top
+        edge is 144px *above* the bottom of the copy, so with the globe on top
+        it covered the form and swallowed clicks on the submit button. Putting
+        the copy above it instead solves that exactly, because the two only
+        overlap where the copy is: the column's box ends where the copy ends,
+        and the limb appears 56px below that. Every pixel of visible planet is
+        outside the column and takes the pointer; every pixel of form is inside
+        it and keeps it.
       -->
-      <div
-        class="pointer-events-none absolute left-1/2 z-20 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
-        :class="globeReady ? 'opacity-100' : 'opacity-0'"
-        style="--globe: 163vw; top: calc(50% - var(--globe) * 0.0402)"
-      >
-        <HeroGlobe @ready="globeReady = true" />
+      <!-- `select-none`, as barrelman's globe box has: without it a drag that
+           starts on the planet and travels up the page selects the headline
+           and the form labels on its way, which is the browser's default
+           reading of a press-and-move over a document. -->
+      <div class="relative z-10 select-none">
+        <div
+          class="absolute left-1/2 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
+          :class="globeReady ? 'opacity-100' : 'opacity-0'"
+          style="--globe: 163vw; top: calc(3.5rem - var(--globe) * 0.0961)"
+        >
+          <HeroGlobe @ready="globeReady = true" />
+        </div>
       </div>
     </section>
   </main>
