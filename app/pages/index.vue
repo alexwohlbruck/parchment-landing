@@ -173,12 +173,38 @@ const onFormSubmit = handleSubmit(onSubmit);
             </a>
           </template>
 
-          <!-- The CTA is the filled pill barrelman's "Get a key" is, at the
-               same padding, so the two headers are the same height. It was a
-               ghost button, which is 2px shorter and made the whole bar 2px
-               shorter with it. -->
+          <!--
+            Two renderings of one destination.
+
+            From `sm` up it is the filled pill barrelman's "Get a key" is, at
+            the same padding, which is what makes the two headers the same
+            height.
+
+            Below `sm` it is a plain link. A phone's bar is already carrying a
+            lockup and a menu button, and a filled pill next to those is the
+            loudest object on the screen for a destination that is not what
+            this page is asking of a visitor — the waitlist form is. It also
+            gives the row back ~60px, which is most of why the bar was cramped
+            enough to push the menu button out of the pill.
+
+            barrelman keeps its pill at every width, deliberately: "Get a key"
+            *is* the ask there. This is the one place the two navs differ, and
+            it differs on what the site wants rather than on how the bar is
+            built.
+          -->
           <template #cta>
-            <Button :href="config.appUrl" variant="dark" size="pill">
+            <a
+              :href="config.appUrl"
+              class="rounded-full px-2 py-1.5 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark sm:hidden"
+            >
+              Launch app →
+            </a>
+            <Button
+              :href="config.appUrl"
+              variant="dark"
+              size="pill"
+              class="max-sm:hidden"
+            >
               Launch app →
             </Button>
           </template>
