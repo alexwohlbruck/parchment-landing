@@ -1,5 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
+import {
+  APP_URL,
+  BARRELMAN_URL,
+  DOCS_URL,
+  GITHUB_URL,
+  RELEASES_URL,
+} from "./app/lib/links";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -28,6 +35,20 @@ export default defineNuxtConfig({
       "https://script.google.com/macros/s/AKfycbwBKEtllpubTQYU-cy_52rpie11r3M1xmAlGxn3xYjopsBhuGVjzLG6NTRrxoR-xYvHNA/exec",
     public: {
       abCookieName: "ab_variant",
+      // Where the nav points, on barrelman-landing's pattern, so a staging
+      // deploy can retarget any of them without a code change.
+      //
+      // The defaults come from app/lib/links.ts rather than being written out
+      // again here. That file exists because the "Launch app" button once
+      // pointed at the marketing site instead of the map app, and a second
+      // copy of the address in this file is exactly how that happens again —
+      // it is also what this merge had to undo, since the runtimeConfig added
+      // on the feature branch had defaulted `appUrl` back to parchment.app.
+      appUrl: process.env.PARCHMENT_APP_URL || APP_URL,
+      docsUrl: process.env.PARCHMENT_DOCS_URL || DOCS_URL,
+      githubUrl: GITHUB_URL,
+      releasesUrl: RELEASES_URL,
+      barrelmanUrl: process.env.BARRELMAN_URL || BARRELMAN_URL,
     },
   },
   app: {
@@ -42,6 +63,11 @@ export default defineNuxtConfig({
         },
       ],
       link: [
+        // Geist from the Google Fonts CDN, the same request barrelman-landing
+        // makes, so the body copy on the two sites is one face served from one
+        // place. The preconnects are what make it worth using a CDN at all:
+        // without them the stylesheet and the woff2 behind it are two cold
+        // connections on the critical path.
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
@@ -50,7 +76,16 @@ export default defineNuxtConfig({
         },
         {
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap",
+          href: "https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap",
+        },
+        {
+          // Without this the hero title reflows once Exposure arrives, because
+          // the @font-face is only discovered after the CSS parses.
+          rel: "preload",
+          as: "font",
+          type: "font/woff2",
+          href: "/fonts/Exposure.woff2",
+          crossorigin: "anonymous",
         },
         {
           rel: "icon",
@@ -58,16 +93,24 @@ export default defineNuxtConfig({
           href: "/favicon.svg",
         },
         // Warm the globe textures early — they're otherwise only requested
-        // after the JS bundle hydrates and Three.js initializes.
+        // after the JS bundle hydrates and three initializes.
+        //
+        // `crossorigin` because three's ImageLoader sets `crossOrigin =
+        // 'anonymous'`: without it the preload key does not match the image
+        // request and the browser downloads both textures a second time.
         {
           rel: "preload",
           as: "image",
+          type: "image/webp",
           href: "/textures/earth_albedo.webp",
+          crossorigin: "",
         },
         {
           rel: "preload",
           as: "image",
+          type: "image/webp",
           href: "/textures/clouds.webp",
+          crossorigin: "",
         },
       ],
     },
