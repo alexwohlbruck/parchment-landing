@@ -4,7 +4,7 @@ import { useForm, type SubmissionHandler } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import { z } from "zod";
 import { toast } from "vue-sonner";
-import { LoaderCircle } from "lucide-vue-next";
+import { Check, LoaderCircle, MailCheck } from "lucide-vue-next";
 import UiNavbar from "@/components/UiNavbar.vue";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
@@ -25,6 +25,30 @@ const fadeUp = (delay: number) =>
     initial: { opacity: 0, y: 24 },
     enter: { opacity: 1, y: 0, transition: { duration: 0.7, delay } },
   }) as const;
+
+/**
+ * The confirmation arriving. Shorter and shallower than the page's own
+ * entrance: this is a reply to something you just did, and a reply that takes
+ * 700ms to appear reads as the page thinking about it.
+ */
+const riseIn = {
+  initial: { opacity: 0, y: 8 },
+  enter: { opacity: 1, y: 0, transition: { duration: 0.28 } },
+} as const;
+
+/**
+ * The mark, landing just behind the panel it sits in — a spring rather than a
+ * curve, because the one thing on screen that should feel physical is the
+ * confirmation that something happened.
+ */
+const popIn = {
+  initial: { opacity: 0, scale: 0.4 },
+  enter: {
+    opacity: 1,
+    scale: 1,
+    transition: { type: "spring", stiffness: 320, damping: 18, delay: 90 },
+  },
+} as const;
 
 const { public: config } = useRuntimeConfig();
 
@@ -98,9 +122,24 @@ const abCookieName =
   (useRuntimeConfig().public.abCookieName as string) || "ab_variant";
 const abVariant = useCookie<string>(abCookieName);
 
+/**
+ * The outcome of a signup, or null while there has not been one.
+ *
+ * The form is replaced by this rather than cleared. A toast was the only
+ * feedback before, and a toast is the wrong shape for it: it appears away from
+ * the thing you just used, it leaves after a few seconds, and it leaves behind
+ * an empty form — which reads as "nothing happened, try again" to anyone who
+ * looked away, and is how people end up submitting twice.
+ *
+ * The address is kept because it is the useful part of the confirmation: what
+ * a person wants to know is not that a button worked, it is which mailbox to
+ * watch, and whether they typed it correctly.
+ */
+const signup = ref<{ email: string; duplicate: boolean } | null>(null);
+
 const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
   try {
-    const { message } = await $fetch("/api/waitlist", {
+    const { duplicate } = await $fetch("/api/waitlist", {
       method: "POST",
       body: {
         name: values.name,
@@ -108,12 +147,21 @@ const onSubmit: SubmissionHandler<WaitlistValues> = async (values) => {
         variant: abVariant.value || "A",
       },
     });
-    toast.success(message || "You're on the list!");
+    signup.value = { email: values.email, duplicate: Boolean(duplicate) };
     resetForm();
   } catch (err: any) {
+    // Failures stay in a toast. They are the case where the form has to remain
+    // on screen with what you typed still in it, so the message has nowhere
+    // else to go.
     toast.error(err?.data?.message || err?.message || "Something went wrong");
   }
 };
+
+/** Back to the form — mostly for "already on the list", where the natural next
+ *  thought is that you used a different address the first time. */
+function signUpAgain() {
+  signup.value = null;
+}
 
 // handleSubmit validates first and only runs onSubmit when the form is valid.
 const onFormSubmit = handleSubmit(onSubmit);
@@ -244,8 +292,95 @@ const onFormSubmit = handleSubmit(onSubmit);
               community.
             </p>
           </div>
-          <div v-motion="fadeUp(0.4)">
-            <form class="mt-9 w-full max-w-xl" @submit.prevent="onFormSubmit">
+          <div v-motion="fadeUp(0.4)" class="w-full max-w-xl">
+            <!--
+              The confirmation, in place of the form.
+
+              Two states, not one. The endpoint has always known whether an
+              address was already on the list — it is what the Apps Script
+              returns — and both outcomes used to arrive as the same green
+              toast, so the one piece of information a returning visitor wants
+              was the one thing the page would not tell them.
+            -->
+            <div
+              v-if="signup"
+              v-motion="riseIn"
+              class="depth mt-9 flex flex-col gap-3 rounded-lg border border-rule-strong bg-parchment/85 px-4 py-3 text-left sm:flex-row sm:items-center"
+              role="status"
+              aria-live="polite"
+            >
+              <div class="flex items-center gap-3">
+                <!--
+                  The mark is the one thing that moves on arrival; everything
+                  else is already still by the time the eye reaches it.
+
+                  Solid for a new signup, tinted for a returning one. A 12%
+                  wash behind a stroked glyph was almost invisible against
+                  paper, and the mark is what the eye lands on before it reads
+                  a word. The duplicate case stays quiet on purpose: it is a
+                  reassurance, not a celebration, and should not congratulate
+                  somebody for doing nothing.
+                -->
+                <span
+                  v-motion="popIn"
+                  class="grid size-9 shrink-0 place-items-center rounded-full"
+                  :class="
+                    signup.duplicate
+                      ? 'bg-paper-deep text-ink-soft'
+                      : 'bg-brand text-parchment shadow-[0_1px_3px_rgba(0,147,242,0.4)]'
+                  "
+                >
+                  <MailCheck
+                    v-if="signup.duplicate"
+                    class="size-5"
+                    stroke-width="1.75"
+                  />
+                  <Check v-else class="size-5" stroke-width="2.75" />
+                </span>
+
+                <div class="min-w-0">
+                  <p class="font-medium text-base-dark">
+                    {{
+                      signup.duplicate
+                        ? "You're already on the list."
+                        : "You're on the list."
+                    }}
+                  </p>
+                  <!--
+                    Wrapped, not truncated. The address is the whole point of
+                    the line — it is how you check you typed it right — and on
+                    a phone `truncate` cut it to "fresh-signup…", which hides
+                    exactly the part worth reading.
+                  -->
+                  <p class="break-words text-caption text-ink-soft">
+                    <template v-if="signup.duplicate">
+                      We have {{ signup.email }} — no need to sign up twice.
+                    </template>
+                    <template v-else>
+                      We'll email {{ signup.email }} when Parchment opens up.
+                    </template>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Wrong address, or a different one. The likeliest next
+                   thought after "already on the list" is that you used
+                   another. Below the text on a phone, beside it once there is
+                   room. -->
+              <button
+                type="button"
+                class="shrink-0 self-start rounded-md px-2 py-1 text-caption text-ink-soft underline decoration-rule-strong underline-offset-4 transition-colors hover:text-base-dark hover:decoration-ink-soft sm:ml-auto sm:self-center"
+                @click="signUpAgain"
+              >
+                {{ signup.duplicate ? "Use another" : "Change" }}
+              </button>
+            </div>
+
+            <form
+              v-else
+              class="mt-9 w-full max-w-xl"
+              @submit.prevent="onFormSubmit"
+            >
               <!-- Stacked below sm. Three controls in a 375px row left the two
                    fields about 100px wide each, which is narrower than the
                    words in them; barrelman's hero takes the same escape with
