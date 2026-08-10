@@ -1,5 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
+import {
+  APP_URL,
+  BARRELMAN_URL,
+  DOCS_URL,
+  GITHUB_URL,
+  RELEASES_URL,
+} from "./app/lib/links";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -28,16 +35,20 @@ export default defineNuxtConfig({
       "https://script.google.com/macros/s/AKfycbwBKEtllpubTQYU-cy_52rpie11r3M1xmAlGxn3xYjopsBhuGVjzLG6NTRrxoR-xYvHNA/exec",
     public: {
       abCookieName: "ab_variant",
-      // Where the nav points. Split out on barrelman-landing's pattern so a
-      // staging deploy can retarget them without a code change, and so the
-      // one place a sibling property's address is written down is here.
-      appUrl: process.env.PARCHMENT_APP_URL || "https://parchment.app",
-      docsUrl: process.env.PARCHMENT_DOCS_URL || "https://docs.parchment.app",
-      githubUrl: "https://github.com/alexwohlbruck/parchment",
-      releasesUrl: "https://github.com/alexwohlbruck/parchment/releases",
-      // The sibling site. Parchment is the map; Barrelman is the API the map
-      // is drawn from, and each links to the other.
-      barrelmanUrl: process.env.BARRELMAN_URL || "https://barrelman.dev",
+      // Where the nav points, on barrelman-landing's pattern, so a staging
+      // deploy can retarget any of them without a code change.
+      //
+      // The defaults come from app/lib/links.ts rather than being written out
+      // again here. That file exists because the "Launch app" button once
+      // pointed at the marketing site instead of the map app, and a second
+      // copy of the address in this file is exactly how that happens again —
+      // it is also what this merge had to undo, since the runtimeConfig added
+      // on the feature branch had defaulted `appUrl` back to parchment.app.
+      appUrl: process.env.PARCHMENT_APP_URL || APP_URL,
+      docsUrl: process.env.PARCHMENT_DOCS_URL || DOCS_URL,
+      githubUrl: GITHUB_URL,
+      releasesUrl: RELEASES_URL,
+      barrelmanUrl: process.env.BARRELMAN_URL || BARRELMAN_URL,
     },
   },
   app: {

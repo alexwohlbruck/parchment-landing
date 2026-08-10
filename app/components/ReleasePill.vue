@@ -16,6 +16,7 @@
  * what it says is fetched.
  */
 import { ArrowRight } from "lucide-vue-next";
+import { RELEASES_URL } from "@/lib/links";
 import type { LatestRelease } from "~~/server/api/release.get";
 
 /**
@@ -29,7 +30,6 @@ import type { LatestRelease } from "~~/server/api/release.get";
  */
 defineProps<{ release: LatestRelease | null }>();
 
-const RELEASES_HREF = "https://github.com/alexwohlbruck/parchment/releases";
 </script>
 
 <template>
@@ -40,7 +40,7 @@ const RELEASES_HREF = "https://github.com/alexwohlbruck/parchment/releases";
   -->
   <a
     v-if="release"
-    :href="release.url || RELEASES_HREF"
+    :href="release.url || RELEASES_URL"
     target="_blank"
     rel="noopener"
     class="depth group inline-flex max-w-full items-center gap-2.5 rounded-full border border-rule-strong bg-parchment/75 py-1 pl-1 pr-3 backdrop-blur-sm transition-all duration-150 hover:border-ink-soft hover:bg-paper-aged"
