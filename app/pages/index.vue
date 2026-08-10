@@ -181,18 +181,25 @@ const onFormSubmit = handleSubmit(onSubmit);
            same gutter as every band on barrelman-landing, so the two sites
            set copy against the same left edge. -->
       <!--
-        `pt-20` is the nav's clearance. The column centres its content in the
-        first 65dvh, and the pill added a row to the top of that stack, which
-        moved the whole thing up until it sat 5px under the floating nav. The
-        padding is on the column rather than the section because the globe is
-        positioned against the section and must not move with the type.
+        `pt-32 sm:pt-36` is barrelman's <SiteHero>, to the pixel, and it is a
+        measured top edge rather than a centred one for that reason.
 
-        `min-h` rather than `h`, so a phone — where the form is stacked and the
-        column is tallest — grows the box instead of spilling its content out
-        of both ends of a fixed one.
+        Centring the stack in the first 65dvh put the pill 170px below the
+        section top against barrelman's 144px — the rest of the rhythm below
+        (28 / 28 / 36) was already identical, so this was the only gap in the
+        hero that did not match, and it was the first one anybody sees. A
+        centred block cannot match a measured one anyway: its top edge moves
+        whenever the copy changes length.
+
+        No `min-h` either. It was 65dvh, which made the column a viewport
+        fraction rather than a stack of copy, and the globe hangs off its
+        bottom edge — so the horizon was 149px below the form on a desktop and
+        18px below it on a phone, for no reason either number could be traced
+        to. The column is exactly as tall as what is in it now, and the globe
+        takes a measured step from that.
       -->
       <div
-        class="measure relative z-10 flex min-h-[65dvh] flex-col items-center justify-center pt-20 will-change-transform [transform-style:preserve-3d] [perspective:1000px]"
+        class="measure relative z-10 flex flex-col items-center pt-32 will-change-transform [transform-style:preserve-3d] [perspective:1000px] sm:pt-36"
       >
         <ClientOnly>
           <!-- What shipped most recently, above the headline, on the same
@@ -318,8 +325,14 @@ const onFormSubmit = handleSubmit(onSubmit);
         The wrapper is an empty relative box in flow, so its `top: 0` *is* the
         column's bottom edge, whatever the column turned out to be. The canvas
         is then pulled up by exactly the distance from its own top to the limb
-        — 0.0961 of it, see below — which puts the horizon 2rem under the
-        column at every width, with no breakpoints in it at all.
+        — 0.0961 of it, see below — which puts the horizon a fixed step under
+        the copy at every width, with no breakpoints in it at all.
+
+        The step is 3.5rem, which is `mt-14`: the same one barrelman's hero
+        takes from its CTA row down to the demo widget. The globe is not a demo
+        widget, but it is the next block after the copy, and the hero's rhythm
+        should not acquire a fifth number just because this block happens to be
+        a planet.
 
         The two constants:
 
@@ -342,7 +355,7 @@ const onFormSubmit = handleSubmit(onSubmit);
         <div
           class="pointer-events-none absolute left-1/2 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
           :class="globeReady ? 'opacity-100' : 'opacity-0'"
-          style="--globe: 163vw; top: calc(2rem - var(--globe) * 0.0961)"
+          style="--globe: 163vw; top: calc(3.5rem - var(--globe) * 0.0961)"
         >
           <HeroGlobe @ready="globeReady = true" />
         </div>
