@@ -475,6 +475,20 @@ const onFormSubmit = handleSubmit(onSubmit);
               </div>
             </form>
           </div>
+
+          <!--
+            The social row, last in the stagger and last in the column.
+
+            Below the form rather than in the nav: the header is three links
+            and one action, and four more marks in it would compete with the
+            thing the page is asking for. Here they are the natural next line
+            for somebody who has just read the ask — and because the globe is
+            anchored to the bottom of this column, the planet steps down by
+            exactly this row's height and the gap under it is unchanged.
+          -->
+          <div v-motion="fadeUp(0.55)" class="mt-6">
+            <SocialLinks />
+          </div>
         </ClientOnly>
       </div>
 
