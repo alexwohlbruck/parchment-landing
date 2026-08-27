@@ -226,6 +226,17 @@ const onFormSubmit = handleSubmit(onSubmit);
         18px below it on a phone, for no reason either number could be traced
         to. The column is exactly as tall as what is in it now, and the globe
         takes a measured step from that.
+
+        That rhythm — 28 / 28 / 36 between the pill, the headline, the lead and
+        the form — is barrelman's, and it holds from `sm` up. Below `sm` it is
+        20 / 20 / 24, and the difference is not a taste: barrelman's hero ends
+        at its CTA row, and this one has a planet hanging off the bottom of it.
+        The same copy sets three or four lines taller on a phone, so at the
+        desktop rhythm the column ran 616px down a 667px screen and the horizon
+        landed *below the fold* — the shortest common phone got a hero with no
+        globe in it. Each step here is one notch down the same scale, which is
+        about as much as can come out of it before the stack reads as a list
+        rather than a sequence.
       -->
       <div
         class="measure relative z-20 flex flex-col items-center pt-32 will-change-transform [transform-style:preserve-3d] [perspective:1000px] sm:pt-36"
@@ -235,7 +246,7 @@ const onFormSubmit = handleSubmit(onSubmit);
                pattern as barrelman's hero. It leads the stagger because it is
                the first line of the page: a visitor who already knows what
                Parchment is wants the news, not the pitch. -->
-          <div v-motion="fadeUp(0)" class="mb-7 flex w-full justify-center">
+          <div v-motion="fadeUp(0)" class="mb-5 flex w-full justify-center sm:mb-7">
             <ReleasePill :release="release" />
           </div>
           <div v-motion="fadeUp(0.1)">
@@ -263,7 +274,9 @@ const onFormSubmit = handleSubmit(onSubmit);
             </h1>
           </div>
           <div v-motion="fadeUp(0.25)">
-            <p class="mt-7 max-w-2xl text-center text-lead leading-relaxed text-ink-soft">
+            <p
+              class="mt-5 max-w-2xl text-center text-lead leading-relaxed text-ink-soft sm:mt-7"
+            >
               Explore the world with beautiful, detailed maps crafted by the
               community.
             </p>
@@ -306,7 +319,7 @@ const onFormSubmit = handleSubmit(onSubmit);
             `inert` on whichever is hidden, so the invisible one is out of the
             tab order rather than merely transparent.
           -->
-          <div v-motion="fadeUp(0.4)" class="mt-9 grid w-full max-w-xl">
+          <div v-motion="fadeUp(0.4)" class="mt-6 grid w-full max-w-xl sm:mt-9">
             <!--
               The confirmation, in place of the form.
 
@@ -485,8 +498,14 @@ const onFormSubmit = handleSubmit(onSubmit);
             for somebody who has just read the ask — and because the globe is
             anchored to the bottom of this column, the planet steps down by
             exactly this row's height and the gap under it is unchanged.
+
+            `mt-2` on a phone against `mt-6` above it, which is a bigger cut
+            than the rest of the column takes, because this row is a coda to
+            the form rather than the next block after it: the marks belong to
+            the ask, and their own 8px of hit padding is already reading as
+            part of the gap.
           -->
-          <div v-motion="fadeUp(0.55)" class="mt-6">
+          <div v-motion="fadeUp(0.55)" class="mt-2 sm:mt-6">
             <SocialLinks />
           </div>
         </ClientOnly>
@@ -513,21 +532,22 @@ const onFormSubmit = handleSubmit(onSubmit);
         — 0.0961 of it, see below — which puts the horizon a fixed step under
         the copy at every width, with no breakpoints in it at all.
 
-        The step is 5rem, and it is the one number in this hero that is not on
-        barrelman's scale.
+        The step is `--step`: 3.5rem — `mt-14`, the step barrelman takes from
+        its CTA row down to the demo widget — and 2.5rem below `sm`.
 
-        It was 3.5rem — `mt-14`, the step barrelman takes from its CTA row down
-        to the demo widget — on the reasoning that the rhythm should not gain a
-        fifth number just because the next block happens to be a planet. That
-        was measuring the wrong edge. Barrelman steps down to a panel with a
-        border: its top edge is where it begins. The globe's atmosphere is
-        brightest at the limb and fades upward through roughly 12vw of canvas
-        above it, so at an identical 56px the planet reads as arriving well
-        before the number says it does, and it crowded the form.
+        It is measured to the glow rather than to the limb. Barrelman steps
+        down to a panel with a border, whose top edge is where it begins; the
+        globe's atmosphere is brightest at the limb and fades upward through
+        roughly 12vw of canvas above it, so the planet reads as arriving before
+        the number says it does. What matters is that 12vw is a *viewport*
+        fraction: 154px of glow on a 1280 desktop, 45px on a 375 phone. A
+        single step overpays on the phone by most of a line of type, which is
+        the one width that cannot spare it — and this is the edge the hero was
+        running past the bottom of the screen on a 667px-tall one.
 
-        5rem restores the gap the scale was trying to describe. The scale is
-        for type; this is the distance at which a light source stops leaning on
-        an input.
+        So the step shrinks with the thing it is clearing. The scale is for
+        type; this is the distance at which a light source stops leaning on
+        what is above it.
 
         The two constants:
 
@@ -551,9 +571,9 @@ const onFormSubmit = handleSubmit(onSubmit);
         it covered the form and swallowed clicks on the submit button. Putting
         the copy above it instead solves that exactly, because the two only
         overlap where the copy is: the column's box ends where the copy ends,
-        and the limb appears 56px below that. Every pixel of visible planet is
-        outside the column and takes the pointer; every pixel of form is inside
-        it and keeps it.
+        and the limb appears one step below that. Every pixel of visible planet
+        is outside the column and takes the pointer; every pixel of form is
+        inside it and keeps it.
       -->
       <!-- `select-none`, as barrelman's globe box has: without it a drag that
            starts on the planet and travels up the page selects the headline
@@ -561,9 +581,9 @@ const onFormSubmit = handleSubmit(onSubmit);
            reading of a press-and-move over a document. -->
       <div class="relative z-10 select-none">
         <div
-          class="absolute left-1/2 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out"
+          class="absolute left-1/2 aspect-square w-[var(--globe)] -translate-x-1/2 transition-opacity duration-1000 ease-out [--step:2.5rem] sm:[--step:3.5rem]"
           :class="globeReady ? 'opacity-100' : 'opacity-0'"
-          style="--globe: 163vw; top: calc(3.5rem - var(--globe) * 0.0961)"
+          style="--globe: 163vw; top: calc(var(--step) - var(--globe) * 0.0961)"
         >
           <HeroGlobe @ready="globeReady = true" />
         </div>

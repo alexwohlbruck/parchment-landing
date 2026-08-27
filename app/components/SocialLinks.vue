@@ -12,7 +12,9 @@
  * shapes rather than the 1.5px strokes the rest of the page uses. That is on
  * purpose and not an oversight: a logo redrawn as an outline is no longer the
  * logo, and at 16px a stroked GitHub cat is mud. `size-4` against a 36px hit
- * area is what keeps them from shouting.
+ * area is what keeps them from shouting — 32px on a phone, where the hero has
+ * to fit a full stack of copy and the horizon above the fold, and where a
+ * finger is not aiming at one mark in a row of four anyway.
  *
  * GitHub is first because it is the one of the four that is also the product —
  * the source, the releases, the issues.
@@ -58,7 +60,7 @@ const socials = [
         rel="noopener"
         :aria-label="social.label"
         :title="social.label"
-        class="ring-offset-background block rounded-full p-2.5 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        class="ring-offset-background block rounded-full p-2 text-ink-soft transition-colors hover:bg-base-dark/5 hover:text-base-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-2.5"
       >
         <svg
           class="size-4"
