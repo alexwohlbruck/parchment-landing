@@ -21,3 +21,10 @@ export const RELEASES_URL = `${GITHUB_URL}/releases`;
 // The sibling site. Parchment is the map; Barrelman is the API it is drawn
 // from, and each site links to the other.
 export const BARRELMAN_URL = "https://barrelman.dev";
+
+// The social accounts, all @parchmentmaps. GitHub is the repository above
+// rather than a fifth address: the project's account *is* its source, and a
+// second copy of that URL is how the two drift apart.
+export const X_URL = "https://x.com/parchmentmaps";
+export const THREADS_URL = "https://www.threads.com/@parchmentmaps";
+export const INSTAGRAM_URL = "https://www.instagram.com/parchmentmaps/";

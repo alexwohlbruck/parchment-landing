@@ -5,7 +5,10 @@ import {
   BARRELMAN_URL,
   DOCS_URL,
   GITHUB_URL,
+  INSTAGRAM_URL,
   RELEASES_URL,
+  THREADS_URL,
+  X_URL,
 } from "./app/lib/links";
 
 export default defineNuxtConfig({
@@ -49,6 +52,11 @@ export default defineNuxtConfig({
       githubUrl: GITHUB_URL,
       releasesUrl: RELEASES_URL,
       barrelmanUrl: process.env.BARRELMAN_URL || BARRELMAN_URL,
+      // No env overrides on these: a staging deploy points at staging APIs,
+      // not at a staging Instagram.
+      xUrl: X_URL,
+      threadsUrl: THREADS_URL,
+      instagramUrl: INSTAGRAM_URL,
     },
   },
   app: {
